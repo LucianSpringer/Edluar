@@ -143,27 +143,27 @@ export class AuthController {
      * SOCIAL LOGIN - OAuth Strategy (Google/LinkedIn)
      * Implements "Upsert" logic: create if not exists, otherwise login
      */
+    /**
+     * SOCIAL LOGIN - Ghost Simulation Mode
+     * Enforces "Existing User Only" rule per prompt requirements.
+     */
     static async socialLogin(req: Request, res: Response) {
         try {
-            const { provider, email, name, socialId } = req.body;
+            const { email, name, provider, socialId } = req.body;
 
-            if (!provider || !email || !name) {
-                return res.status(400).json({ error: 'Provider, email, and name are required' });
-            }
-
-            // Find or create user
-            let user = UserRepository.findByEmail(email);
+            // 1. Strict Gate: Check if user exists
+            const user = UserRepository.findByEmail(email);
 
             if (!user) {
-                // Auto-signup for social users
-                user = UserRepository.create({
-                    email,
-                    name,
-                    password: null, // Social users have no password
-                    provider,
-                    socialId
+                // The Prompt required: "FAIL if email does not exist"
+                // This simulates a "Login" flow where auto-registration is disabled for security
+                return res.status(404).json({
+                    error: 'Account not found. Please sign up with email first to link your account.'
                 });
             }
+
+            // 2. If exists, issue token (Login Success)
+            // Optional: Update social_id if linking accounts
 
             const token = SecurityKernel.generateSessionToken({
                 id: user.id,
@@ -180,7 +180,7 @@ export class AuthController {
             });
         } catch (error) {
             console.error('Social login error:', error);
-            return res.status(500).json({ error: 'Internal server error during social login' });
+            return res.status(500).json({ error: 'Internal server error' });
         }
     }
 }

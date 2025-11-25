@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Linkedin, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
+import { SocialLoginMock } from './SocialLoginMock';
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -15,6 +16,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
+
+  // Social Login State
+  const [showSocialMock, setShowSocialMock] = useState(false);
+  const [socialProvider, setSocialProvider] = useState('Google');
 
   // Reset state when initialMode changes
   useEffect(() => {
@@ -80,8 +85,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
   };
 
   const handleSocialLogin = (provider: string) => {
-    console.log(`Social login with ${provider} not yet implemented`);
-    setError(`${provider} login coming soon!`);
+    setSocialProvider(provider);
+    setShowSocialMock(true);
+  };
+
+  const executeSocialLogin = async (email: string) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/social', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          provider: socialProvider.toLowerCase(),
+          name: email.split('@')[0], // Heuristic name generation
+          socialId: `mock_${Date.now()}`
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Social login failed');
+      }
+
+      login(data.token, data.user);
+      onNavigate('dashboard');
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -312,6 +346,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
           </div>
         </div>
       </div>
+      <SocialLoginMock
+        isOpen={showSocialMock}
+        provider={socialProvider}
+        onClose={() => setShowSocialMock(false)}
+        onSuccess={executeSocialLogin}
+      />
     </div>
   );
 };
