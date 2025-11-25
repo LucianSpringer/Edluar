@@ -12,11 +12,11 @@ import { LoginPage } from './components/LoginPage';
 import { DashboardPage } from './components/DashboardPage';
 import { IntegrationsPage } from './components/IntegrationsPage';
 import { ChangelogPage } from './components/ChangelogPage';
-import { 
-  Users, 
-  BarChart3, 
-  Calendar, 
-  ShieldCheck, 
+import {
+  Users,
+  BarChart3,
+  Calendar,
+  ShieldCheck,
   ArrowRight,
   CheckCircle2,
   Leaf,
@@ -85,8 +85,8 @@ const FeaturesSection = () => {
   ];
 
   return (
-    <section 
-      id="features" 
+    <section
+      id="features"
       ref={sectionRef}
       className="py-24 bg-white dark:bg-edluar-deep relative overflow-hidden transition-colors duration-300"
     >
@@ -105,8 +105,8 @@ const FeaturesSection = () => {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`group p-8 rounded-2xl bg-edluar-cream/30 dark:bg-edluar-surface/50 border border-edluar-pale dark:border-edluar-moss/20 hover:bg-white dark:hover:bg-edluar-surface hover:shadow-xl hover:shadow-edluar-moss/5 dark:hover:shadow-none transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
@@ -161,9 +161,9 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
       desc: "Agile project tracking tool used by dev teams to manage issues, sprints, and software releases.",
       logo: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M11.5 11.5H17.2V23H5.8V17.3L11.5 11.5Z" fill="#2684FF"/>
-          <path d="M17.3 5.8V23H11.6V11.5L17.3 5.8Z" fill="#0052CC"/>
-          <path d="M5.8 17.3H11.5V23H5.8V17.3Z" fill="#0052CC"/>
+          <path d="M11.5 11.5H17.2V23H5.8V17.3L11.5 11.5Z" fill="#2684FF" />
+          <path d="M17.3 5.8V23H11.6V11.5L17.3 5.8Z" fill="#0052CC" />
+          <path d="M5.8 17.3H11.5V23H5.8V17.3Z" fill="#0052CC" />
         </svg>
       )
     },
@@ -172,10 +172,10 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
       desc: "Project management tool for planning, tracking, and collaborating on tasks and workflows.",
       logo: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" fill="#F06A6A" fillOpacity="0.1"/>
-          <circle cx="12" cy="7" r="3" fill="#F06A6A"/>
-          <circle cx="16" cy="15" r="3" fill="#F06A6A"/>
-          <circle cx="8" cy="15" r="3" fill="#F06A6A"/>
+          <circle cx="12" cy="12" r="10" fill="#F06A6A" fillOpacity="0.1" />
+          <circle cx="12" cy="7" r="3" fill="#F06A6A" />
+          <circle cx="16" cy="15" r="3" fill="#F06A6A" />
+          <circle cx="8" cy="15" r="3" fill="#F06A6A" />
         </svg>
       )
     },
@@ -189,12 +189,12 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
       desc: "Cloud-based storage to upload, organize, and share files across teams in real-time.",
       logo: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8.5 17.5H15.5L12 23L8.5 17.5Z" fill="#0066DA"/>
-          <path d="M15.5 17.5L12 23L22 23L19 17.5H15.5Z" fill="#00AC47"/>
-          <path d="M3 17.5H8.5L12 11.5L6.5 11.5L3 17.5Z" fill="#EA4335"/>
-          <path d="M6.5 11.5L12 11.5L19 17.5L15.5 17.5L6.5 11.5Z" fill="#FFBA00"/>
-          <path d="M12 2L6.5 11.5H12L15.5 5.5L12 2Z" fill="#00AC47"/>
-          <path d="M15.5 5.5L19 11.5H13.5L10 5.5H15.5Z" fill="#0066DA"/>
+          <path d="M8.5 17.5H15.5L12 23L8.5 17.5Z" fill="#0066DA" />
+          <path d="M15.5 17.5L12 23L22 23L19 17.5H15.5Z" fill="#00AC47" />
+          <path d="M3 17.5H8.5L12 11.5L6.5 11.5L3 17.5Z" fill="#EA4335" />
+          <path d="M6.5 11.5L12 11.5L19 17.5L15.5 17.5L6.5 11.5Z" fill="#FFBA00" />
+          <path d="M12 2L6.5 11.5H12L15.5 5.5L12 2Z" fill="#00AC47" />
+          <path d="M15.5 5.5L19 11.5H13.5L10 5.5H15.5Z" fill="#0066DA" />
         </svg>
       )
     },
@@ -203,7 +203,7 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
       desc: "Collaborative online whiteboard for brainstorming and mapping ideas.",
       logo: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 21V9L8 6L12 12L16 6L21 9V21" stroke="#FFD02F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M3 21V9L8 6L12 12L16 6L21 9V21" stroke="#FFD02F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       )
     },
@@ -212,17 +212,17 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
       desc: "Visual task board using cards and lists to manage projects with flexibility and ease.",
       logo: (
         <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="20" height="20" rx="3" transform="translate(2 2)" fill="#0079BF"/>
-          <rect x="5" y="5" width="6" height="9" rx="1" fill="white"/>
-          <rect x="13" y="5" width="6" height="6" rx="1" fill="white"/>
+          <rect width="20" height="20" rx="3" transform="translate(2 2)" fill="#0079BF" />
+          <rect x="5" y="5" width="6" height="9" rx="1" fill="white" />
+          <rect x="13" y="5" width="6" height="6" rx="1" fill="white" />
         </svg>
       )
     }
   ];
 
   return (
-    <section 
-      id="integrations" 
+    <section
+      id="integrations"
       ref={sectionRef}
       className="py-24 bg-edluar-cream dark:bg-edluar-deep border-t border-edluar-pale/30 dark:border-edluar-moss/20 transition-colors duration-300"
     >
@@ -243,11 +243,10 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {integrations.map((item, index) => (
-            <div 
+            <div
               key={index}
-              className={`bg-white dark:bg-edluar-surface p-6 rounded-2xl border border-edluar-pale dark:border-edluar-moss/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 group flex flex-col ${
-                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
+              className={`bg-white dark:bg-edluar-surface p-6 rounded-2xl border border-edluar-pale dark:border-edluar-moss/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 group flex flex-col ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+                }`}
               style={{ transitionDelay: `${index * 50}ms` }}
             >
               <div className="flex items-start justify-between mb-4">
@@ -279,8 +278,8 @@ const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params
       company: "Canopy Corp",
       logo: (
         <div className="flex items-center gap-2 text-white">
-           <Trees className="w-10 h-10" />
-           <span className="text-3xl font-bold">Canopy</span>
+          <Trees className="w-10 h-10" />
+          <span className="text-3xl font-bold">Canopy</span>
         </div>
       ),
       category: "Agencies",
@@ -291,10 +290,10 @@ const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params
     {
       company: "Nimbus",
       logo: (
-         <div className="flex items-center gap-2 text-sky-900">
-           <CloudSun className="w-10 h-10" />
-           <span className="text-3xl font-black tracking-tight">Nimbus</span>
-         </div>
+        <div className="flex items-center gap-2 text-sky-900">
+          <CloudSun className="w-10 h-10" />
+          <span className="text-3xl font-black tracking-tight">Nimbus</span>
+        </div>
       ),
       category: "Tech",
       headline: "How Nimbus Reduced Time-to-Hire by 40%",
@@ -305,8 +304,8 @@ const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params
       company: "Sprout Labs",
       logo: (
         <div className="flex items-center gap-2 text-edluar-dark">
-           <Sprout className="w-10 h-10" />
-           <span className="text-3xl font-bold">Sprout</span>
+          <Sprout className="w-10 h-10" />
+          <span className="text-3xl font-bold">Sprout</span>
         </div>
       ),
       category: "Product",
@@ -355,18 +354,18 @@ const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params
     }
   ];
 
-  const filteredStories = activeFilter === 'All' 
-    ? stories 
+  const filteredStories = activeFilter === 'All'
+    ? stories
     : stories.filter(s => s.category === activeFilter);
 
   return (
     <section id="customer" className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         {/* Header Grid */}
         <div className="grid md:grid-cols-2 gap-8 mb-16 items-end">
           <h2 className="text-6xl md:text-7xl font-serif font-black text-edluar-dark dark:text-edluar-cream leading-[0.9] tracking-tight">
-            Customer <br/> stories
+            Customer <br /> stories
           </h2>
           <p className="text-lg text-edluar-dark/70 dark:text-edluar-cream/60 md:pl-10 leading-relaxed">
             Thousands of teams rely on Edluar to hire better, manage HR smoothly, and create a recruitment experience everyone loves. See what they've built with us.
@@ -375,34 +374,33 @@ const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 mb-12">
-           {filters.map(filter => (
-             <button
-               key={filter}
-               onClick={() => setActiveFilter(filter)}
-               className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${
-                 activeFilter === filter
-                   ? 'bg-edluar-dark text-white dark:bg-edluar-cream dark:text-edluar-dark'
-                   : 'bg-transparent text-edluar-dark dark:text-edluar-cream hover:bg-edluar-pale/30 dark:hover:bg-edluar-moss/20'
-               }`}
-             >
-               {filter}
-             </button>
-           ))}
+          {filters.map(filter => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeFilter === filter
+                  ? 'bg-edluar-dark text-white dark:bg-edluar-cream dark:text-edluar-dark'
+                  : 'bg-transparent text-edluar-dark dark:text-edluar-cream hover:bg-edluar-pale/30 dark:hover:bg-edluar-moss/20'
+                }`}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
-        
+
         {/* Story Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredStories.map((story, i) => (
-            <div 
-              key={i} 
-              className="group cursor-pointer flex flex-col h-full" 
+            <div
+              key={i}
+              className="group cursor-pointer flex flex-col h-full"
               onClick={() => story.id > 0 ? onNavigate('blog-post', { id: story.id }) : onNavigate('blog')}
             >
               {/* Logo Area */}
               <div className={`h-64 rounded-2xl ${story.bgColor} flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-[1.02] shadow-sm border border-black/5 dark:border-white/5`}>
-                 {story.logo}
+                {story.logo}
               </div>
-              
+
               {/* Text Area */}
               <div className="flex flex-col flex-grow">
                 <span className="text-xs font-bold uppercase tracking-wider text-edluar-dark dark:text-edluar-cream mb-3">
@@ -445,38 +443,38 @@ const PricingSection = ({ onNavigate }: { onNavigate: (page: string, params?: an
   }, []);
 
   const tiers = [
-    { 
-      name: "Seedling", 
-      price: "$0", 
-      desc: "For small teams just starting out.", 
+    {
+      name: "Seedling",
+      price: "$0",
+      desc: "For small teams just starting out.",
       features: [
         { text: "1 Active Job", tooltip: "Only one job post can be live at a time." },
         { text: "50 Candidates", tooltip: "Store up to 50 candidate profiles." },
         "Basic Pipeline"
-      ] 
+      ]
     },
-    { 
-      name: "Sapling", 
-      price: "$49", 
-      desc: "For growing companies hiring regularly.", 
+    {
+      name: "Sapling",
+      price: "$49",
+      desc: "For growing companies hiring regularly.",
       features: [
-        "10 Active Jobs", 
-        "Unlimited Candidates", 
-        { text: "AI Descriptions", tag: "Limited", tooltip: "Generate up to 10 AI job descriptions per month." }, 
+        "10 Active Jobs",
+        "Unlimited Candidates",
+        { text: "AI Descriptions", tag: "Limited", tooltip: "Generate up to 10 AI job descriptions per month." },
         "Email Integration"
-      ], 
-      popular: true 
+      ],
+      popular: true
     },
-    { 
-      name: "Forest", 
-      price: "$199", 
-      desc: "For large organizations with multiple teams.", 
+    {
+      name: "Forest",
+      price: "$199",
+      desc: "For large organizations with multiple teams.",
       features: [
-        "Unlimited Jobs", 
-        "Unlimited Candidates", 
-        { text: "Advanced Analytics", tooltip: "Full reporting suite and custom dashboards." }, 
+        "Unlimited Jobs",
+        "Unlimited Candidates",
+        { text: "Advanced Analytics", tooltip: "Full reporting suite and custom dashboards." },
         "Dedicated Success Mgr"
-      ] 
+      ]
     }
   ];
 
@@ -490,8 +488,8 @@ const PricingSection = ({ onNavigate }: { onNavigate: (page: string, params?: an
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {tiers.map((tier, idx) => (
-            <div 
-              key={idx} 
+            <div
+              key={idx}
               className={`relative p-8 rounded-3xl bg-white dark:bg-edluar-surface border ${tier.popular ? 'border-edluar-moss ring-4 ring-edluar-moss/10 dark:ring-edluar-moss/20' : 'border-edluar-pale dark:border-edluar-moss/20'} flex flex-col transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
               style={{ transitionDelay: `${idx * 150}ms` }}
             >
@@ -526,10 +524,10 @@ const PricingSection = ({ onNavigate }: { onNavigate: (page: string, params?: an
                           </span>
                         )}
                         {tooltip && (
-                            <HelpCircle className="w-3 h-3 ml-1 text-edluar-pale dark:text-edluar-moss opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <HelpCircle className="w-3 h-3 ml-1 text-edluar-pale dark:text-edluar-moss opacity-0 group-hover:opacity-100 transition-opacity" />
                         )}
                       </div>
-                      
+
                       {/* Tooltip Popup */}
                       {tooltip && (
                         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-edluar-dark dark:bg-edluar-cream text-white dark:text-edluar-dark text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 text-center">
@@ -541,8 +539,8 @@ const PricingSection = ({ onNavigate }: { onNavigate: (page: string, params?: an
                   );
                 })}
               </ul>
-              <Button 
-                variant={tier.popular ? 'primary' : 'outline'} 
+              <Button
+                variant={tier.popular ? 'primary' : 'outline'}
                 className="w-full"
                 onClick={() => onNavigate('login', { mode: 'signup' })}
               >
@@ -581,11 +579,11 @@ const FAQSection = () => {
           <h2 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-4">Frequently Asked Questions</h2>
           <p className="text-lg text-edluar-dark/70 dark:text-edluar-cream/60">Everything you need to know about Edluar.</p>
         </div>
-        
+
         <div className="space-y-4">
           {faqs.map((faq, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="border border-edluar-pale dark:border-edluar-moss/30 rounded-2xl overflow-hidden bg-edluar-cream/20 dark:bg-edluar-surface/20"
             >
               <button
@@ -599,10 +597,9 @@ const FAQSection = () => {
                   <Plus className="w-5 h-5 text-edluar-moss dark:text-edluar-sage flex-shrink-0" />
                 )}
               </button>
-              <div 
-                className={`px-6 text-edluar-dark/80 dark:text-edluar-cream/80 transition-all duration-300 ease-in-out overflow-hidden ${
-                  openIndex === index ? 'max-h-48 pb-6 opacity-100' : 'max-h-0 opacity-0'
-                }`}
+              <div
+                className={`px-6 text-edluar-dark/80 dark:text-edluar-cream/80 transition-all duration-300 ease-in-out overflow-hidden ${openIndex === index ? 'max-h-48 pb-6 opacity-100' : 'max-h-0 opacity-0'
+                  }`}
               >
                 {faq.answer}
               </div>
@@ -680,9 +677,8 @@ const ScrollToTop = () => {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-8 right-8 p-3 rounded-full bg-edluar-moss dark:bg-edluar-sage text-white shadow-lg hover:bg-edluar-dark dark:hover:bg-edluar-moss focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep transition-all duration-500 ease-in-out z-50 transform ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
-      }`}
+      className={`fixed bottom-8 right-8 p-3 rounded-full bg-edluar-moss dark:bg-edluar-sage text-white shadow-lg hover:bg-edluar-dark dark:hover:bg-edluar-moss focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep transition-all duration-500 ease-in-out z-50 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
+        }`}
       aria-label="Scroll to top"
     >
       <ArrowUp className="w-6 h-6" />
@@ -730,7 +726,7 @@ const App: React.FC = () => {
 
   const handleNavigate = (target: string, params?: any) => {
     setNavParams(params || {});
-    
+
     if (target === 'login') {
       setAuthMode(params?.mode || 'login');
     }
@@ -770,37 +766,37 @@ const App: React.FC = () => {
       // If navigating to home specific section, logic is handled in header click or below
       // For Footer clicks on home sections:
       if (['features', 'integrations', 'customer', 'pricing', 'faq'].includes(target)) {
-         setTimeout(() => {
-            const el = document.getElementById(target);
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-         }, 100);
+        setTimeout(() => {
+          const el = document.getElementById(target);
+          if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       } else {
-         window.scrollTo(0, 0);
+        window.scrollTo(0, 0);
       }
     }
   };
 
   if (page === 'login') {
-      return (
-          <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
-             <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
-             <LoginPage onNavigate={handleNavigate} initialMode={authMode} />
-          </div>
-      );
+    return (
+      <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
+        <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
+        <LoginPage onNavigate={handleNavigate} initialMode={authMode} />
+      </div>
+    );
   }
 
   if (page === 'dashboard') {
-     return (
-        <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
-           <DashboardPage onNavigate={handleNavigate} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
-        </div>
-     );
+    return (
+      <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
+        <DashboardPage onNavigate={handleNavigate} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep selection:bg-edluar-pale dark:selection:bg-edluar-moss selection:text-edluar-dark dark:selection:text-white transition-colors duration-300">
       <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
-      
+
       {page === 'home' ? (
         <>
           {/* Hero Section */}
@@ -811,27 +807,27 @@ const App: React.FC = () => {
                   <span className="flex h-2 w-2 rounded-full bg-edluar-moss dark:bg-edluar-sage animate-pulse"></span>
                   <span className="text-sm font-medium text-edluar-dark/80 dark:text-edluar-cream/80">Edluar 2.0 is now live</span>
                 </div>
-                
+
                 <h1 className="text-5xl md:text-7xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-8 leading-tight tracking-tight">
-                  Cultivate Your Dream Team with <br/>
+                  Cultivate Your Dream Team with <br />
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-edluar-moss to-edluar-sage dark:from-edluar-sage dark:to-edluar-pale">Intelligent Simplicity.</span>
                 </h1>
-                
+
                 <p className="text-xl text-edluar-dark/70 dark:text-edluar-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
                   Edluar combines organic workflows with AI precision to make recruitment human again. Grow your workforce sustainably.
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-                  <Button 
-                    variant="primary" 
-                    size="lg" 
-                    className="w-full sm:w-auto" 
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-full sm:w-auto"
                     onClick={() => handleNavigate('login', { mode: 'signup' })}
                   >
                     Start Free Trial
                   </Button>
                   <Button variant="outline" size="lg" className="w-full sm:w-auto group">
-                    Watch Demo 
+                    Watch Demo
                     <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
                   </Button>
                 </div>
@@ -840,46 +836,46 @@ const App: React.FC = () => {
               {/* Abstract Hero Visual using Palette */}
               <div className="mt-20 relative mx-auto max-w-5xl">
                 <div className="aspect-[16/9] bg-gradient-to-tr from-edluar-sage to-edluar-pale dark:from-edluar-moss dark:to-edluar-sage rounded-2xl shadow-2xl overflow-hidden relative border-4 border-white/50 dark:border-edluar-surface/50">
-                   {/* Mock UI Elements */}
-                   <div className="absolute inset-4 bg-edluar-cream/90 dark:bg-edluar-deep/90 backdrop-blur rounded-xl shadow-inner p-6 transition-colors duration-300">
-                      <div className="flex justify-between items-center mb-8 border-b border-edluar-pale dark:border-edluar-moss/30 pb-4">
-                        <div className="flex space-x-2">
-                           <div className="w-3 h-3 rounded-full bg-red-300 dark:bg-red-400"></div>
-                           <div className="w-3 h-3 rounded-full bg-yellow-300 dark:bg-yellow-400"></div>
-                           <div className="w-3 h-3 rounded-full bg-green-300 dark:bg-green-400"></div>
-                        </div>
-                        <div className="h-4 w-32 bg-edluar-pale dark:bg-edluar-moss/30 rounded-full"></div>
+                  {/* Mock UI Elements */}
+                  <div className="absolute inset-4 bg-edluar-cream/90 dark:bg-edluar-deep/90 backdrop-blur rounded-xl shadow-inner p-6 transition-colors duration-300">
+                    <div className="flex justify-between items-center mb-8 border-b border-edluar-pale dark:border-edluar-moss/30 pb-4">
+                      <div className="flex space-x-2">
+                        <div className="w-3 h-3 rounded-full bg-red-300 dark:bg-red-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-yellow-300 dark:bg-yellow-400"></div>
+                        <div className="w-3 h-3 rounded-full bg-green-300 dark:bg-green-400"></div>
                       </div>
-                      <div className="flex gap-6">
-                        <div className="w-1/4 space-y-3">
-                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3">
-                              <div className="h-2 w-12 bg-edluar-sage dark:bg-edluar-moss rounded mb-2"></div>
-                              <div className="h-2 w-20 bg-edluar-pale dark:bg-edluar-moss/40 rounded"></div>
-                           </div>
-                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-70"></div>
-                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-50"></div>
+                      <div className="h-4 w-32 bg-edluar-pale dark:bg-edluar-moss/30 rounded-full"></div>
+                    </div>
+                    <div className="flex gap-6">
+                      <div className="w-1/4 space-y-3">
+                        <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3">
+                          <div className="h-2 w-12 bg-edluar-sage dark:bg-edluar-moss rounded mb-2"></div>
+                          <div className="h-2 w-20 bg-edluar-pale dark:bg-edluar-moss/40 rounded"></div>
                         </div>
-                        <div className="flex-1 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-6 space-y-4">
-                            <div className="flex justify-between">
-                               <div className="h-8 w-48 bg-edluar-dark/10 dark:bg-edluar-cream/10 rounded"></div>
-                               <div className="h-8 w-24 bg-edluar-moss rounded text-white text-xs flex items-center justify-center">Hire</div>
-                            </div>
-                            <div className="h-4 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
-                            <div className="h-4 w-3/4 bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
-                            <div className="h-32 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded mt-4"></div>
-                        </div>
+                        <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-70"></div>
+                        <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-50"></div>
                       </div>
-                   </div>
+                      <div className="flex-1 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-6 space-y-4">
+                        <div className="flex justify-between">
+                          <div className="h-8 w-48 bg-edluar-dark/10 dark:bg-edluar-cream/10 rounded"></div>
+                          <div className="h-8 w-24 bg-edluar-moss rounded text-white text-xs flex items-center justify-center">Hire</div>
+                        </div>
+                        <div className="h-4 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
+                        <div className="h-4 w-3/4 bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
+                        <div className="h-32 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded mt-4"></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Background Decorative Circles with Parallax & Organic Float Animation */}
-            <div 
+            <div
               className="absolute top-1/4 -left-20 w-96 h-96 bg-edluar-pale/30 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear animate-float"
               style={{ transform: `translateY(${scrollY * 0.2}px)` }}
             ></div>
-            <div 
+            <div
               className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-edluar-sage/20 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear animate-float-delayed"
               style={{ transform: `translateY(${-scrollY * 0.1}px)` }}
             ></div>
@@ -907,9 +903,9 @@ const App: React.FC = () => {
       ) : page === 'integrations' ? (
         <IntegrationsPage />
       ) : page === 'changelog' ? (
-        <ChangelogPage />
+        <ChangelogPage onNavigate={handleNavigate} />
       ) : null}
-      
+
       <Footer onNavigate={handleNavigate} />
       <ScrollToTop />
     </div>
