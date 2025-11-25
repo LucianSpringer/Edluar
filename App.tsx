@@ -127,64 +127,76 @@ const TestimonialsSection = () => {
 
   const stories = [
     {
-      company: "Docfield",
+      company: "Canopy Corp",
       logo: (
-        <div className="flex items-center gap-2">
-           <div className="w-10 h-10 border-4 border-[#3B82F6] rotate-45 rounded-md"></div>
-           <span className="text-3xl font-bold text-edluar-dark">Docfield</span>
+        <div className="flex items-center gap-2 text-white">
+           <Trees className="w-10 h-10" />
+           <span className="text-3xl font-bold">Canopy</span>
         </div>
-      ),
-      category: "Tech",
-      headline: "From chaos to clarity: Docfield's hiring transformation with Edluar",
-      bgColor: "bg-white"
-    },
-    {
-      company: "Ask Phill",
-      logo: (
-         <span className="text-4xl font-bold text-[#E11D48] tracking-tight">Ask Phill</span>
       ),
       category: "Agencies",
-      headline: "Building global brands and a diverse team - Ask Phill's journey with Edluar",
-      bgColor: "bg-edluar-cream/40"
+      headline: "How Canopy Corp grew their remote team by 200% sustainably.",
+      bgColor: "bg-[#2F3E30]" // Dark Green
     },
     {
-      company: "Buffer",
+      company: "Nimbus",
       logo: (
-        <div className="flex items-center gap-2 text-edluar-cream">
-           <Boxes className="w-10 h-10" />
-           <span className="text-3xl font-bold">Buffer</span>
-        </div>
+         <div className="flex items-center gap-2 text-sky-900">
+           <CloudSun className="w-10 h-10" />
+           <span className="text-3xl font-black tracking-tight">Nimbus</span>
+         </div>
       ),
       category: "Tech",
-      headline: "5 things Buffer does to attract exceptional talent",
-      bgColor: "bg-edluar-dark dark:bg-edluar-surface"
+      headline: "Nimbus clears the fog of recruitment with transparent pipelines.",
+      bgColor: "bg-[#E0F2FE]" // Sky Blue
     },
     {
-      company: "Dopper",
+      company: "Sprout Labs",
       logo: (
-        <span className="text-4xl font-black text-[#3B82F6] lowercase tracking-tighter">dopper.</span>
+        <div className="flex items-center gap-2 text-edluar-dark">
+           <Sprout className="w-10 h-10" />
+           <span className="text-3xl font-bold">Sprout</span>
+        </div>
       ),
       category: "Product",
-      headline: "How Dopper uses Edluar to build a talent pool of lasting connections.",
-      bgColor: "bg-orange-50 dark:bg-orange-900/10"
+      headline: "Cultivating top engineering talent from the ground up.",
+      bgColor: "bg-edluar-pale" // Pale Green
     },
     {
-      company: "TNW",
+      company: "Flora Fin",
       logo: (
-        <span className="text-5xl font-black text-white tracking-widest">TNW</span>
+        <div className="flex items-center gap-2 text-rose-900">
+          <Flower2 className="w-10 h-10" />
+          <span className="text-3xl font-serif italic font-bold">Flora Fin</span>
+        </div>
       ),
       category: "Tech",
-      headline: "How TNW hired 100 teammates in 2 years with Edluar.",
-      bgColor: "bg-black"
+      headline: "Flora Fin's organic approach to high-stakes financial hiring.",
+      bgColor: "bg-[#FFF1F2]" // Rose
     },
     {
-      company: "Hike One",
+      company: "Evergreen",
       logo: (
-        <span className="text-4xl font-bold text-white">Hike One</span>
+        <div className="flex items-center gap-2 text-edluar-dark">
+          <Leaf className="w-10 h-10" />
+          <span className="text-3xl font-bold">Evergreen</span>
+        </div>
       ),
       category: "Agencies",
-      headline: "How Hike One uses Edluar to put candidate experience front and center.",
-      bgColor: "bg-[#2563EB]"
+      headline: "Keeping candidate relationships fresh with automated nurturing.",
+      bgColor: "bg-edluar-cream" // Cream
+    },
+    {
+      company: "Summit Systems",
+      logo: (
+        <div className="flex items-center gap-2 text-white">
+          <BarChart3 className="w-10 h-10" />
+          <span className="text-3xl font-bold">SUMMIT</span>
+        </div>
+      ),
+      category: "Tech",
+      headline: "Scaling to the summit: Hiring 50 devs in 3 months.",
+      bgColor: "bg-gray-900" // Dark Gray
     }
   ];
 
@@ -224,7 +236,7 @@ const TestimonialsSection = () => {
         </div>
         
         {/* Story Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-24">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredStories.map((story, i) => (
             <div key={i} className="group cursor-pointer flex flex-col h-full">
               {/* Logo Area */}
@@ -244,45 +256,10 @@ const TestimonialsSection = () => {
             </div>
           ))}
         </div>
-
-        <CompanyLogos />
       </div>
     </section>
   );
 };
-
-const CompanyLogos = () => {
-  const logos = [
-    { icon: <Trees className="w-8 h-8" />, name: "Canopy Corp", type: "plain" },
-    { icon: <CloudSun className="w-8 h-8" />, name: "Nimbus", type: "clickable" },
-    { icon: <Sprout className="w-8 h-8" />, name: "Sprout Labs", type: "plain" },
-    { icon: <Flower2 className="w-8 h-8" />, name: "Flora Fin", type: "plain" },
-  ];
-
-  return (
-    <div className="border-t border-edluar-dark/10 dark:border-edluar-cream/10 pt-16">
-      <p className="text-center text-sm font-semibold text-edluar-dark/50 dark:text-edluar-cream/40 uppercase tracking-widest mb-10">Trusted by organic teams worldwide</p>
-      <div className="flex flex-wrap justify-center items-center gap-12 md:gap-24 opacity-70">
-        {logos.map((logo, idx) => (
-          <div 
-            key={idx} 
-            className={`flex items-center space-x-2 group transition-all duration-300 ${logo.type === 'clickable' ? 'cursor-pointer hover:opacity-100 hover:scale-105' : 'grayscale hover:grayscale-0 dark:brightness-150'}`}
-          >
-            <div className={`text-edluar-moss dark:text-edluar-sage ${logo.type === 'clickable' ? 'text-edluar-dark dark:text-edluar-cream' : ''}`}>
-              {logo.icon}
-            </div>
-            <span className={`font-serif font-bold text-xl ${logo.type === 'clickable' ? 'text-edluar-dark dark:text-edluar-cream' : 'text-edluar-dark/60 dark:text-edluar-cream/60'}`}>
-              {logo.name}
-            </span>
-            {logo.type === 'clickable' && (
-               <span className="hidden group-hover:inline-block ml-2 text-xs bg-edluar-moss text-white px-2 py-0.5 rounded-full animate-fade-in-up">Read Case Study</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 const PricingSection = () => {
   const [isVisible, setIsVisible] = useState(false);
