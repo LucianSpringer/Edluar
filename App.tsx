@@ -12,7 +12,7 @@ import { LoginPage } from './components/LoginPage';
 import { DashboardPage } from './components/DashboardPage';
 import { IntegrationsPage } from './components/IntegrationsPage';
 import { ChangelogPage } from './components/ChangelogPage';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/ProtectedRoute.tsx';
 import { useAuth } from './context/AuthContext';
 import {
   Users,

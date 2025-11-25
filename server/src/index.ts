@@ -41,6 +41,13 @@ app.use((req: Request, res: Response, next) => {
  */
 app.use('/api/auth', authRoutes);
 
+import { ContentController } from './controllers/ContentController';
+app.get('/api/posts', ContentController.getAllPosts);
+app.get('/api/posts/:id', ContentController.getPostById);
+
+// Seeding Logic
+
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
     res.json({ status: 'operational', timestamp: new Date().toISOString() });

@@ -50,3 +50,22 @@ CREATE TABLE IF NOT EXISTS job_openings (
 
 CREATE INDEX idx_job_openings_user_id ON job_openings(user_id);
 CREATE INDEX idx_job_openings_status ON job_openings(status);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    excerpt TEXT,
+    content TEXT, -- HTML Payload
+    category TEXT,
+    date TEXT,
+    read_time TEXT,
+    image_url TEXT,
+    author_name TEXT,
+    author_role TEXT,
+    author_image TEXT,
+    author_bio TEXT,
+    is_featured BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts_category ON posts(category);
