@@ -92,7 +92,6 @@ const FeaturesSection = () => {
       ref={sectionRef}
       className="py-24 bg-white dark:bg-edluar-deep relative overflow-hidden transition-colors duration-300"
     >
-      {/* Decorative background blob */}
       <div className="absolute top-0 right-0 w-1/3 h-1/3 bg-edluar-pale/20 dark:bg-edluar-moss/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -114,11 +113,9 @@ const FeaturesSection = () => {
             >
               <div className="w-12 h-12 rounded-xl bg-edluar-pale dark:bg-edluar-moss/30 flex items-center justify-center text-edluar-moss dark:text-edluar-pale mb-6 group-hover:scale-110 transition-transform relative group/icon">
                 {feature.icon}
-                {/* Tooltip */}
                 <span className="absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 bg-edluar-dark dark:bg-edluar-cream text-edluar-cream dark:text-edluar-dark text-xs rounded opacity-0 group-hover/icon:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-20 shadow-md">
                   {feature.title}
                 </span>
-                {/* Tooltip Triangle */}
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-2 h-2 bg-edluar-dark dark:bg-edluar-cream rotate-45 opacity-0 group-hover/icon:opacity-100 transition-opacity duration-200"></div>
               </div>
               <h3 className="text-xl font-bold text-edluar-dark dark:text-edluar-cream mb-3">{feature.title}</h3>
@@ -270,147 +267,39 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
   );
 };
 
-const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params?: any) => void }) => {
-  const [activeFilter, setActiveFilter] = useState('All');
-
-  const filters = ['All', 'Agencies', 'Tech', 'Product'];
-
-  const stories = [
-    {
-      company: "Canopy Corp",
-      logo: (
-        <div className="flex items-center gap-2 text-white">
-          <Trees className="w-10 h-10" />
-          <span className="text-3xl font-bold">Canopy</span>
-        </div>
-      ),
-      category: "Agencies",
-      headline: "How Canopy Corp grew their remote team by 200% sustainably.",
-      bgColor: "bg-[#2F3E30]", // Dark Green
-      id: 101
-    },
-    {
-      company: "Nimbus",
-      logo: (
-        <div className="flex items-center gap-2 text-sky-900">
-          <CloudSun className="w-10 h-10" />
-          <span className="text-3xl font-black tracking-tight">Nimbus</span>
-        </div>
-      ),
-      category: "Tech",
-      headline: "How Nimbus Reduced Time-to-Hire by 40%",
-      bgColor: "bg-[#E0F2FE]", // Sky Blue
-      id: 2
-    },
-    {
-      company: "Sprout Labs",
-      logo: (
-        <div className="flex items-center gap-2 text-edluar-dark">
-          <Sprout className="w-10 h-10" />
-          <span className="text-3xl font-bold">Sprout</span>
-        </div>
-      ),
-      category: "Product",
-      headline: "Cultivating top engineering talent from the ground up.",
-      bgColor: "bg-edluar-pale", // Pale Green
-      id: 0
-    },
-    {
-      company: "Flora Fin",
-      logo: (
-        <div className="flex items-center gap-2 text-rose-900">
-          <Flower2 className="w-10 h-10" />
-          <span className="text-3xl font-serif italic font-bold">Flora Fin</span>
-        </div>
-      ),
-      category: "Tech",
-      headline: "Flora Fin's organic approach to high-stakes financial hiring.",
-      bgColor: "bg-[#FFF1F2]", // Rose
-      id: 102
-    },
-    {
-      company: "Evergreen",
-      logo: (
-        <div className="flex items-center gap-2 text-edluar-dark">
-          <Leaf className="w-10 h-10" />
-          <span className="text-3xl font-bold">Evergreen</span>
-        </div>
-      ),
-      category: "Agencies",
-      headline: "Keeping candidate relationships fresh with automated nurturing.",
-      bgColor: "bg-edluar-cream", // Cream
-      id: 103
-    },
-    {
-      company: "Summit Systems",
-      logo: (
-        <div className="flex items-center gap-2 text-white">
-          <BarChart3 className="w-10 h-10" />
-          <span className="text-3xl font-bold">SUMMIT</span>
-        </div>
-      ),
-      category: "Tech",
-      headline: "Scaling to the summit: Hiring 50 devs in 3 months.",
-      bgColor: "bg-gray-900", // Dark Gray
-      id: 104
-    }
-  ];
-
-  const filteredStories = activeFilter === 'All'
-    ? stories
-    : stories.filter(s => s.category === activeFilter);
-
+const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
   return (
-    <section id="customer" className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
+    <section className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Header Grid */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16 items-end">
-          <h2 className="text-6xl md:text-7xl font-serif font-black text-edluar-dark dark:text-edluar-cream leading-[0.9] tracking-tight">
-            Customer <br /> stories
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-4">
+            Trusted by Forward-Thinking Teams
           </h2>
-          <p className="text-lg text-edluar-dark/70 dark:text-edluar-cream/60 md:pl-10 leading-relaxed">
-            Thousands of teams rely on Edluar to hire better, manage HR smoothly, and create a recruitment experience everyone loves. See what they've built with us.
-          </p>
         </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 mb-12">
-          {filters.map(filter => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeFilter === filter
-                ? 'bg-edluar-dark text-white dark:bg-edluar-cream dark:text-edluar-dark'
-                : 'bg-transparent text-edluar-dark dark:text-edluar-cream hover:bg-edluar-pale/30 dark:hover:bg-edluar-moss/20'
-                }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-
-        {/* Story Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredStories.map((story, i) => (
-            <div
-              key={i}
-              className="group cursor-pointer flex flex-col h-full"
-              onClick={() => story.id > 0 ? onNavigate('blog-post', { id: story.id }) : onNavigate('blog')}
-            >
-              {/* Logo Area */}
-              <div className={`h-64 rounded-2xl ${story.bgColor} flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-[1.02] shadow-sm border border-black/5 dark:border-white/5`}>
-                {story.logo}
-              </div>
-
-              {/* Text Area */}
-              <div className="flex flex-col flex-grow">
-                <span className="text-xs font-bold uppercase tracking-wider text-edluar-dark dark:text-edluar-cream mb-3">
-                  {story.category}
-                </span>
-                <h3 className="text-xl font-medium text-edluar-dark dark:text-edluar-cream leading-snug group-hover:underline decoration-2 decoration-edluar-pale underline-offset-4">
-                  {story.headline}
-                </h3>
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              quote: "Edluar transformed how we hire. The AI descriptions are spot on.",
+              author: "Sarah J.",
+              role: "HR Director"
+            },
+            {
+              quote: "Finally, an ATS that doesn't feel like a spreadsheet from 1999.",
+              author: "Mark T.",
+              role: "Startup Founder"
+            },
+            {
+              quote: "The collaboration features helped us align our team instantly.",
+              author: "Emily R.",
+              role: "Talent Acquisition"
+            }
+          ].map((t, i) => (
+            <div key={i} className="p-8 bg-edluar-cream/30 dark:bg-edluar-surface/50 rounded-2xl shadow-sm border border-edluar-pale dark:border-edluar-moss/20">
+              <Quote className="w-8 h-8 text-edluar-moss mb-4" />
+              <p className="text-edluar-dark/80 dark:text-edluar-cream/80 mb-6 italic">"{t.quote}"</p>
+              <div>
+                <div className="font-bold text-edluar-dark dark:text-edluar-cream">{t.author}</div>
+                <div className="text-sm text-edluar-dark/60 dark:text-edluar-cream/60">{t.role}</div>
               </div>
             </div>
           ))}
@@ -701,9 +590,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Theme Logic
   useEffect(() => {
-    // Check local storage or system preference
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
       setIsDarkMode(true);
@@ -728,7 +615,6 @@ const App: React.FC = () => {
 
   const handleNavigate = (target: string, params?: any) => {
     setNavParams(params || {});
-
     if (target === 'login') {
       setAuthMode(params?.mode || 'login');
     }
@@ -765,8 +651,6 @@ const App: React.FC = () => {
       window.scrollTo(0, 0);
     } else {
       setPage('home');
-      // If navigating to home specific section, logic is handled in header click or below
-      // For Footer clicks on home sections:
       if (['features', 'integrations', 'customer', 'pricing', 'faq'].includes(target)) {
         setTimeout(() => {
           const el = document.getElementById(target);
@@ -803,7 +687,6 @@ const App: React.FC = () => {
 
       {page === 'home' ? (
         <>
-          {/* Hero Section */}
           <section className="relative pt-20 pb-32 overflow-hidden">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
               <div className="text-center max-w-4xl mx-auto">
@@ -837,10 +720,8 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Abstract Hero Visual using Palette */}
               <div className="mt-20 relative mx-auto max-w-5xl">
                 <div className="aspect-[16/9] bg-gradient-to-tr from-edluar-sage to-edluar-pale dark:from-edluar-moss dark:to-edluar-sage rounded-2xl shadow-2xl overflow-hidden relative border-4 border-white/50 dark:border-edluar-surface/50">
-                  {/* Mock UI Elements */}
                   <div className="absolute inset-4 bg-edluar-cream/90 dark:bg-edluar-deep/90 backdrop-blur rounded-xl shadow-inner p-6 transition-colors duration-300">
                     <div className="flex justify-between items-center mb-8 border-b border-edluar-pale dark:border-edluar-moss/30 pb-4">
                       <div className="flex space-x-2">
@@ -874,7 +755,6 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Background Decorative Circles with Parallax & Organic Float Animation */}
             <div
               className="absolute top-1/4 -left-20 w-96 h-96 bg-edluar-pale/30 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear animate-float"
               style={{ transform: `translateY(${scrollY * 0.2}px)` }}
