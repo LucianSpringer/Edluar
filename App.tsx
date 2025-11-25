@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { AIDemo } from './components/AIDemo';
@@ -11,6 +10,8 @@ import { ContactPage } from './components/ContactPage';
 import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
 import { LoginPage } from './components/LoginPage';
 import { DashboardPage } from './components/DashboardPage';
+import { IntegrationsPage } from './components/IntegrationsPage';
+import { ChangelogPage } from './components/ChangelogPage';
 import { 
   Users, 
   BarChart3, 
@@ -32,7 +33,8 @@ import {
   ArrowUp,
   HelpCircle,
   Hexagon,
-  Boxes
+  Boxes,
+  Github
 } from 'lucide-react';
 
 const FeaturesSection = () => {
@@ -120,6 +122,144 @@ const FeaturesSection = () => {
               <h3 className="text-xl font-bold text-edluar-dark dark:text-edluar-cream mb-3">{feature.title}</h3>
               <p className="text-edluar-dark/70 dark:text-edluar-cream/60 leading-relaxed">
                 {feature.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const integrations = [
+    {
+      name: "Jira",
+      desc: "Agile project tracking tool used by dev teams to manage issues, sprints, and software releases.",
+      logo: (
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M11.5 11.5H17.2V23H5.8V17.3L11.5 11.5Z" fill="#2684FF"/>
+          <path d="M17.3 5.8V23H11.6V11.5L17.3 5.8Z" fill="#0052CC"/>
+          <path d="M5.8 17.3H11.5V23H5.8V17.3Z" fill="#0052CC"/>
+        </svg>
+      )
+    },
+    {
+      name: "Asana",
+      desc: "Project management tool for planning, tracking, and collaborating on tasks and workflows.",
+      logo: (
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" fill="#F06A6A" fillOpacity="0.1"/>
+          <circle cx="12" cy="7" r="3" fill="#F06A6A"/>
+          <circle cx="16" cy="15" r="3" fill="#F06A6A"/>
+          <circle cx="8" cy="15" r="3" fill="#F06A6A"/>
+        </svg>
+      )
+    },
+    {
+      name: "Github",
+      desc: "Code hosting platform for version collaboration and continuous development workflows.",
+      logo: <Github className="w-8 h-8 text-gray-900 dark:text-white" />
+    },
+    {
+      name: "Google Drive",
+      desc: "Cloud-based storage to upload, organize, and share files across teams in real-time.",
+      logo: (
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8.5 17.5H15.5L12 23L8.5 17.5Z" fill="#0066DA"/>
+          <path d="M15.5 17.5L12 23L22 23L19 17.5H15.5Z" fill="#00AC47"/>
+          <path d="M3 17.5H8.5L12 11.5L6.5 11.5L3 17.5Z" fill="#EA4335"/>
+          <path d="M6.5 11.5L12 11.5L19 17.5L15.5 17.5L6.5 11.5Z" fill="#FFBA00"/>
+          <path d="M12 2L6.5 11.5H12L15.5 5.5L12 2Z" fill="#00AC47"/>
+          <path d="M15.5 5.5L19 11.5H13.5L10 5.5H15.5Z" fill="#0066DA"/>
+        </svg>
+      )
+    },
+    {
+      name: "Miro",
+      desc: "Collaborative online whiteboard for brainstorming and mapping ideas.",
+      logo: (
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 21V9L8 6L12 12L16 6L21 9V21" stroke="#FFD02F" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      )
+    },
+    {
+      name: "Trello",
+      desc: "Visual task board using cards and lists to manage projects with flexibility and ease.",
+      logo: (
+        <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="20" height="20" rx="3" transform="translate(2 2)" fill="#0079BF"/>
+          <rect x="5" y="5" width="6" height="9" rx="1" fill="white"/>
+          <rect x="13" y="5" width="6" height="6" rx="1" fill="white"/>
+        </svg>
+      )
+    }
+  ];
+
+  return (
+    <section 
+      id="integrations" 
+      ref={sectionRef}
+      className="py-24 bg-edluar-cream dark:bg-edluar-deep border-t border-edluar-pale/30 dark:border-edluar-moss/20 transition-colors duration-300"
+    >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-4">
+              Features apps
+            </h2>
+            <p className="text-lg text-edluar-dark/70 dark:text-edluar-cream/60">
+              Connect with your favorite tools to streamline your workflow.
+            </p>
+          </div>
+          <Button variant="outline" onClick={() => onNavigate('integrations')}>
+            View all integrations <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {integrations.map((item, index) => (
+            <div 
+              key={index}
+              className={`bg-white dark:bg-edluar-surface p-6 rounded-2xl border border-edluar-pale dark:border-edluar-moss/20 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-500 group flex flex-col ${
+                isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+              }`}
+              style={{ transitionDelay: `${index * 50}ms` }}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 bg-white dark:bg-edluar-surface rounded-xl flex items-center justify-center border border-edluar-pale/30 dark:border-edluar-moss/20 group-hover:scale-110 transition-transform duration-300">
+                  {item.logo}
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-edluar-dark dark:text-edluar-cream mb-2">
+                {item.name}
+              </h3>
+              <p className="text-edluar-dark/70 dark:text-edluar-cream/70 text-sm leading-relaxed">
+                {item.desc}
               </p>
             </div>
           ))}
@@ -619,11 +759,17 @@ const App: React.FC = () => {
     } else if (target === 'dashboard') {
       setPage('dashboard');
       window.scrollTo(0, 0);
+    } else if (target === 'integrations') {
+      setPage('integrations');
+      window.scrollTo(0, 0);
+    } else if (target === 'changelog') {
+      setPage('changelog');
+      window.scrollTo(0, 0);
     } else {
       setPage('home');
       // If navigating to home specific section, logic is handled in header click or below
       // For Footer clicks on home sections:
-      if (['features', 'customer', 'pricing', 'faq'].includes(target)) {
+      if (['features', 'integrations', 'customer', 'pricing', 'faq'].includes(target)) {
          setTimeout(() => {
             const el = document.getElementById(target);
             if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -740,6 +886,7 @@ const App: React.FC = () => {
           </section>
 
           <FeaturesSection />
+          <IntegrationsSection onNavigate={handleNavigate} />
           <TestimonialsSection onNavigate={handleNavigate} />
           <AIDemo />
           <PricingSection onNavigate={handleNavigate} />
@@ -757,6 +904,10 @@ const App: React.FC = () => {
         <ContactPage />
       ) : page === 'privacy' ? (
         <PrivacyPolicyPage />
+      ) : page === 'integrations' ? (
+        <IntegrationsPage />
+      ) : page === 'changelog' ? (
+        <ChangelogPage />
       ) : null}
       
       <Footer onNavigate={handleNavigate} />
