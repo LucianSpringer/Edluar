@@ -1,54 +1,95 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Menu, X, Leaf, Moon, Sun, ChevronDown } from 'lucide-react';
 import { Button } from './Button';
 
 interface HeaderProps {
   isDarkMode: boolean;
   toggleTheme: () => void;
+  currentPage: string;
+  onNavigate: (page: string, params?: any) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
+export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme, currentPage, onNavigate }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const resourceLinks = [
-    { name: 'About Us', href: '#' },
-    { name: 'Careers', href: '#' },
-    { name: 'Blog', href: '#' },
-    { name: 'Contact', href: '#' },
-    { name: 'Privacy Policy', href: '#' },
+    { name: 'About Us', action: () => onNavigate('about') },
+    { name: 'Careers', action: () => onNavigate('careers') },
+    { name: 'Blog', action: () => onNavigate('blog') },
+    { name: 'Contact', action: () => onNavigate('contact') },
+    { name: 'Privacy Policy', action: () => onNavigate('privacy') },
   ];
 
+  const handleNavClick = (target: string) => {
+    if (currentPage !== 'home') {
+      onNavigate('home');
+      if (target !== 'home') {
+          setTimeout(() => {
+              const element = document.getElementById(target);
+              if (element) element.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+      }
+    } else {
+        if (target !== 'home') {
+             const element = document.getElementById(target);
+             if (element) element.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
-    <header className="sticky top-0 z-50 bg-edluar-cream/80 dark:bg-edluar-deep/90 backdrop-blur-md border-b border-edluar-pale/50 dark:border-edluar-moss/30 transition-colors duration-300">
+    <header 
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
+        isScrolled 
+          ? 'bg-edluar-cream/95 dark:bg-edluar-deep/95 backdrop-blur-md border-b border-edluar-pale/50 dark:border-edluar-moss/30 shadow-sm' 
+          : 'bg-transparent border-b border-transparent'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => onNavigate('home')}
+            className="flex items-center space-x-2 focus:outline-none"
+          >
             <div className="bg-edluar-moss p-2 rounded-lg">
                 <Leaf className="w-6 h-6 text-edluar-cream" />
             </div>
             <span className="text-2xl font-serif font-bold text-edluar-dark dark:text-edluar-cream">Edluar</span>
-          </div>
+          </button>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-6">
-            {['Features', 'AI Demo', 'Pricing'].map((item) => (
-              <a 
-                key={item}
-                href={`#${item.toLowerCase().replace(' ', '')}`} 
-                className="relative group text-edluar-dark dark:text-edluar-cream/80 dark:hover:text-edluar-cream font-medium transition-colors px-1 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep"
-              >
-                <span className="relative z-10">{item}</span>
-                {/* Scale from center animation */}
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-edluar-moss dark:bg-edluar-pale origin-center scale-x-0 transition-transform duration-300 group-hover:scale-x-100 group-focus:scale-x-100"></span>
-              </a>
-            ))}
+            {['Features', 'Customer', 'AI Demo', 'Pricing', 'FAQ'].map((item) => {
+                const targetId = item.toLowerCase().replace(' ', '');
+                return (
+                  <button 
+                    key={item}
+                    onClick={() => handleNavClick(targetId)}
+                    className="relative group text-edluar-dark dark:text-edluar-cream/80 dark:hover:text-edluar-cream font-medium transition-colors px-1 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep"
+                  >
+                    <span className="relative z-10">{item}</span>
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-edluar-moss dark:bg-edluar-pale origin-center scale-x-0 transition-transform duration-300 group-hover:scale-x-100 group-focus:scale-x-100"></span>
+                  </button>
+                );
+            })}
 
             {/* Resources Dropdown */}
             <div className="relative group">
               <button 
-                className="flex items-center space-x-1 text-edluar-dark dark:text-edluar-cream/80 dark:hover:text-edluar-cream font-medium transition-colors px-1 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep group-hover:text-edluar-moss dark:group-hover:text-edluar-pale"
+                className={`flex items-center space-x-1 font-medium transition-colors px-1 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep group-hover:text-edluar-moss dark:group-hover:text-edluar-pale ${['about', 'careers', 'blog', 'contact', 'privacy'].includes(currentPage) ? 'text-edluar-moss dark:text-edluar-pale' : 'text-edluar-dark dark:text-edluar-cream/80'}`}
                 aria-expanded="false"
                 aria-haspopup="true"
               >
@@ -60,13 +101,15 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
               <div className="absolute top-full left-0 mt-1 w-56 opacity-0 invisible translate-y-2 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 transition-all duration-300 ease-out pt-2">
                 <div className="relative bg-white dark:bg-edluar-surface rounded-xl shadow-xl border border-edluar-pale/50 dark:border-edluar-moss/30 overflow-hidden p-2">
                   {resourceLinks.map((link) => (
-                    <a
+                    <button
                       key={link.name}
-                      href={link.href}
-                      className="block px-4 py-2.5 text-sm text-edluar-dark dark:text-edluar-cream/90 hover:bg-edluar-cream dark:hover:bg-edluar-moss/20 rounded-lg transition-colors"
+                      onClick={() => {
+                          if (link.action) link.action();
+                      }}
+                      className="block w-full text-left px-4 py-2.5 text-sm text-edluar-dark dark:text-edluar-cream/90 hover:bg-edluar-cream dark:hover:bg-edluar-moss/20 rounded-lg transition-colors"
                     >
                       {link.name}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -85,6 +128,7 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
               variant="outline" 
               size="sm" 
               className="ml-2 focus:ring-2 focus:ring-offset-2 focus:ring-edluar-dark dark:focus:ring-offset-edluar-deep outline-none"
+              onClick={() => onNavigate('login', { mode: 'login' })}
             >
               Login
             </Button>
@@ -92,6 +136,7 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
               variant="primary" 
               size="sm" 
               className="ml-2 focus:ring-2 focus:ring-offset-2 focus:ring-edluar-dark dark:focus:ring-offset-edluar-deep outline-none"
+              onClick={() => onNavigate('login', { mode: 'signup' })}
             >
               Start Free Trial
             </Button>
@@ -120,23 +165,26 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
         </div>
       </div>
 
-      {/* Mobile Nav */}
-      {isMenuOpen && (
+      {/* Mobile Nav with Smooth Transition */}
+      <div 
+        className={`absolute top-full left-0 w-full bg-edluar-cream dark:bg-edluar-surface border-t border-edluar-pale dark:border-edluar-moss/30 shadow-lg overflow-hidden transition-all duration-300 ease-in-out origin-top ${
+          isMenuOpen ? 'max-h-screen opacity-100 visible' : 'max-h-0 opacity-0 invisible'
+        }`}
+      >
         <nav 
           id="mobile-menu" 
-          className="md:hidden bg-edluar-cream dark:bg-edluar-surface border-t border-edluar-pale dark:border-edluar-moss/30 shadow-lg"
+          className="md:hidden"
           aria-label="Mobile Navigation"
         >
           <div className="px-4 pt-2 pb-6 space-y-2">
-            {['Features', 'AI Demo', 'Pricing'].map((item) => (
-              <a 
+            {['Features', 'Customer', 'AI Demo', 'Pricing', 'FAQ'].map((item) => (
+              <button 
                 key={item}
-                href={`#${item.toLowerCase().replace(' ', '')}`} 
-                className="block px-3 py-3 text-edluar-dark dark:text-edluar-cream font-medium hover:bg-edluar-dark hover:text-white dark:hover:bg-edluar-moss focus:bg-edluar-dark focus:text-white dark:focus:bg-edluar-moss rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => handleNavClick(item.toLowerCase().replace(' ', ''))}
+                className="block w-full text-left px-3 py-3 text-edluar-dark dark:text-edluar-cream font-medium hover:bg-edluar-dark hover:text-white dark:hover:bg-edluar-moss focus:bg-edluar-dark focus:text-white dark:focus:bg-edluar-moss rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss"
               >
                 {item}
-              </a>
+              </button>
             ))}
 
             {/* Mobile Resources Accordion */}
@@ -149,16 +197,18 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
                 <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isResourcesOpen ? 'rotate-180' : ''}`} />
               </button>
               
-              <div className={`space-y-1 pl-4 overflow-hidden transition-all duration-300 ${isResourcesOpen ? 'max-h-60 mt-2' : 'max-h-0'}`}>
+              <div className={`space-y-1 pl-4 overflow-hidden transition-all duration-300 ${isResourcesOpen ? 'max-h-72 mt-2' : 'max-h-0'}`}>
                 {resourceLinks.map((link) => (
-                  <a
+                  <button
                     key={link.name}
-                    href={link.href}
-                    className="block px-3 py-2 text-sm text-edluar-dark/80 dark:text-edluar-cream/80 hover:text-edluar-moss dark:hover:text-edluar-pale transition-colors rounded-md"
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={() => {
+                        if (link.action) link.action();
+                        setIsMenuOpen(false);
+                    }}
+                    className="block w-full text-left px-3 py-2 text-sm text-edluar-dark/80 dark:text-edluar-cream/80 hover:text-edluar-moss dark:hover:text-edluar-pale transition-colors rounded-md"
                   >
                     {link.name}
-                  </a>
+                  </button>
                 ))}
               </div>
             </div>
@@ -167,21 +217,21 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, toggleTheme }) => {
               <Button 
                 variant="outline" 
                 className="w-full focus:ring-2 focus:ring-offset-2 focus:ring-edluar-dark dark:focus:ring-offset-edluar-deep"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); onNavigate('login', { mode: 'login' }); }}
               >
                 Login
               </Button>
               <Button 
                 variant="primary" 
                 className="w-full focus:ring-2 focus:ring-offset-2 focus:ring-edluar-dark dark:focus:ring-offset-edluar-deep"
-                onClick={() => setIsMenuOpen(false)}
+                onClick={() => { setIsMenuOpen(false); onNavigate('login', { mode: 'signup' }); }}
               >
                 Start Free Trial
               </Button>
             </div>
           </div>
         </nav>
-      )}
+      </div>
     </header>
   );
 };

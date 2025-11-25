@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Loader2, Copy, Check } from 'lucide-react';
+import { Sparkles, Loader2, Copy, Check, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Button } from './Button';
 import { generateJobDescription } from '../services/geminiService';
 
@@ -37,7 +37,7 @@ export const AIDemo: React.FC = () => {
     const isError = length >= limit;
     const isWarning = length >= limit - WARNING_THRESHOLD;
     
-    const base = "w-full px-4 py-3 rounded-xl border bg-edluar-cream/30 dark:bg-black/20 dark:text-edluar-cream focus:ring-2 outline-none transition-all";
+    const base = "w-full px-4 py-3 pr-10 rounded-xl border bg-edluar-cream/30 dark:bg-black/20 dark:text-edluar-cream focus:ring-2 outline-none transition-all";
     
     if (isError) {
       return `${base} border-red-300 focus:border-red-500 focus:ring-red-200 dark:border-red-800 dark:focus:ring-red-900`;
@@ -54,8 +54,18 @@ export const AIDemo: React.FC = () => {
     return 'text-edluar-dark/50 dark:text-edluar-pale/50';
   };
 
+  const renderValidationIcon = (length: number, limit: number) => {
+    if (length >= limit) {
+      return <AlertCircle className="w-5 h-5 text-red-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />;
+    }
+    if (length >= limit - WARNING_THRESHOLD) {
+      return <AlertTriangle className="w-5 h-5 text-yellow-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />;
+    }
+    return null;
+  };
+
   return (
-    <div id="demo" className="py-24 bg-gradient-to-b from-edluar-cream to-edluar-pale/30 dark:from-edluar-deep dark:to-edluar-surface/30 transition-colors duration-300">
+    <div id="aidemo" className="py-24 bg-gradient-to-b from-edluar-cream to-edluar-pale/30 dark:from-edluar-deep dark:to-edluar-surface/30 transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           
@@ -105,15 +115,18 @@ export const AIDemo: React.FC = () => {
                       {role.length}/{ROLE_LIMIT}
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    id="role"
-                    value={role}
-                    maxLength={ROLE_LIMIT}
-                    onChange={(e) => setRole(e.target.value)}
-                    placeholder="e.g. Senior Product Designer"
-                    className={getInputClass(role.length, ROLE_LIMIT)}
-                  />
+                  <div className="relative">
+                    <input
+                        type="text"
+                        id="role"
+                        value={role}
+                        maxLength={ROLE_LIMIT}
+                        onChange={(e) => setRole(e.target.value)}
+                        placeholder="e.g. Senior Product Designer"
+                        className={getInputClass(role.length, ROLE_LIMIT)}
+                    />
+                    {renderValidationIcon(role.length, ROLE_LIMIT)}
+                  </div>
                 </div>
                 <div>
                   <div className="flex justify-between items-center mb-1">
@@ -122,15 +135,18 @@ export const AIDemo: React.FC = () => {
                       {skills.length}/{SKILLS_LIMIT}
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    id="skills"
-                    value={skills}
-                    maxLength={SKILLS_LIMIT}
-                    onChange={(e) => setSkills(e.target.value)}
-                    placeholder="e.g. Figma, React, Empathy"
-                    className={getInputClass(skills.length, SKILLS_LIMIT)}
-                  />
+                  <div className="relative">
+                    <input
+                        type="text"
+                        id="skills"
+                        value={skills}
+                        maxLength={SKILLS_LIMIT}
+                        onChange={(e) => setSkills(e.target.value)}
+                        placeholder="e.g. Figma, React, Empathy"
+                        className={getInputClass(skills.length, SKILLS_LIMIT)}
+                    />
+                     {renderValidationIcon(skills.length, SKILLS_LIMIT)}
+                  </div>
                 </div>
                 <Button 
                   type="submit" 
@@ -157,7 +173,11 @@ export const AIDemo: React.FC = () => {
                   <>
                     <button 
                       onClick={handleCopy}
-                      className="absolute top-3 right-3 p-2 text-edluar-moss dark:text-edluar-pale hover:bg-edluar-pale dark:hover:bg-edluar-surface rounded-lg transition-colors"
+                      className={`absolute top-3 right-3 p-2 rounded-lg transition-all duration-300 ${
+                        copied 
+                          ? 'bg-edluar-moss text-white scale-110 shadow-md' 
+                          : 'text-edluar-moss dark:text-edluar-pale hover:bg-edluar-pale dark:hover:bg-edluar-surface'
+                      }`}
                       title="Copy to clipboard"
                     >
                       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

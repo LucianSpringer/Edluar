@@ -1,7 +1,16 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { AIDemo } from './components/AIDemo';
 import { Button } from './components/Button';
+import { AboutPage } from './components/AboutPage';
+import { CareersPage } from './components/CareersPage';
+import { BlogPage } from './components/BlogPage';
+import { BlogPostPage } from './components/BlogPostPage';
+import { ContactPage } from './components/ContactPage';
+import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
+import { LoginPage } from './components/LoginPage';
+import { DashboardPage } from './components/DashboardPage';
 import { 
   Users, 
   BarChart3, 
@@ -120,7 +129,7 @@ const FeaturesSection = () => {
   );
 };
 
-const TestimonialsSection = () => {
+const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string, params?: any) => void }) => {
   const [activeFilter, setActiveFilter] = useState('All');
 
   const filters = ['All', 'Agencies', 'Tech', 'Product'];
@@ -136,7 +145,8 @@ const TestimonialsSection = () => {
       ),
       category: "Agencies",
       headline: "How Canopy Corp grew their remote team by 200% sustainably.",
-      bgColor: "bg-[#2F3E30]" // Dark Green
+      bgColor: "bg-[#2F3E30]", // Dark Green
+      id: 101
     },
     {
       company: "Nimbus",
@@ -147,8 +157,9 @@ const TestimonialsSection = () => {
          </div>
       ),
       category: "Tech",
-      headline: "Nimbus clears the fog of recruitment with transparent pipelines.",
-      bgColor: "bg-[#E0F2FE]" // Sky Blue
+      headline: "How Nimbus Reduced Time-to-Hire by 40%",
+      bgColor: "bg-[#E0F2FE]", // Sky Blue
+      id: 2
     },
     {
       company: "Sprout Labs",
@@ -160,7 +171,8 @@ const TestimonialsSection = () => {
       ),
       category: "Product",
       headline: "Cultivating top engineering talent from the ground up.",
-      bgColor: "bg-edluar-pale" // Pale Green
+      bgColor: "bg-edluar-pale", // Pale Green
+      id: 0
     },
     {
       company: "Flora Fin",
@@ -172,7 +184,8 @@ const TestimonialsSection = () => {
       ),
       category: "Tech",
       headline: "Flora Fin's organic approach to high-stakes financial hiring.",
-      bgColor: "bg-[#FFF1F2]" // Rose
+      bgColor: "bg-[#FFF1F2]", // Rose
+      id: 102
     },
     {
       company: "Evergreen",
@@ -184,7 +197,8 @@ const TestimonialsSection = () => {
       ),
       category: "Agencies",
       headline: "Keeping candidate relationships fresh with automated nurturing.",
-      bgColor: "bg-edluar-cream" // Cream
+      bgColor: "bg-edluar-cream", // Cream
+      id: 103
     },
     {
       company: "Summit Systems",
@@ -196,7 +210,8 @@ const TestimonialsSection = () => {
       ),
       category: "Tech",
       headline: "Scaling to the summit: Hiring 50 devs in 3 months.",
-      bgColor: "bg-gray-900" // Dark Gray
+      bgColor: "bg-gray-900", // Dark Gray
+      id: 104
     }
   ];
 
@@ -205,7 +220,7 @@ const TestimonialsSection = () => {
     : stories.filter(s => s.category === activeFilter);
 
   return (
-    <section className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
+    <section id="customer" className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header Grid */}
@@ -238,7 +253,11 @@ const TestimonialsSection = () => {
         {/* Story Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredStories.map((story, i) => (
-            <div key={i} className="group cursor-pointer flex flex-col h-full">
+            <div 
+              key={i} 
+              className="group cursor-pointer flex flex-col h-full" 
+              onClick={() => story.id > 0 ? onNavigate('blog-post', { id: story.id }) : onNavigate('blog')}
+            >
               {/* Logo Area */}
               <div className={`h-64 rounded-2xl ${story.bgColor} flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-[1.02] shadow-sm border border-black/5 dark:border-white/5`}>
                  {story.logo}
@@ -261,7 +280,7 @@ const TestimonialsSection = () => {
   );
 };
 
-const PricingSection = () => {
+const PricingSection = ({ onNavigate }: { onNavigate: (page: string, params?: any) => void }) => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
@@ -382,7 +401,13 @@ const PricingSection = () => {
                   );
                 })}
               </ul>
-              <Button variant={tier.popular ? 'primary' : 'outline'} className="w-full">Choose {tier.name}</Button>
+              <Button 
+                variant={tier.popular ? 'primary' : 'outline'} 
+                className="w-full"
+                onClick={() => onNavigate('login', { mode: 'signup' })}
+              >
+                Choose {tier.name}
+              </Button>
             </div>
           ))}
         </div>
@@ -410,7 +435,7 @@ const FAQSection = () => {
   ];
 
   return (
-    <section className="py-24 bg-white dark:bg-edluar-deep border-b border-edluar-pale/30 dark:border-edluar-moss/20 transition-colors duration-300">
+    <section id="faq" className="py-24 bg-white dark:bg-edluar-deep border-b border-edluar-pale/30 dark:border-edluar-moss/20 transition-colors duration-300">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-4">Frequently Asked Questions</h2>
@@ -449,12 +474,12 @@ const FAQSection = () => {
   );
 };
 
-const Footer = () => (
+const Footer = ({ onNavigate }: { onNavigate: (page: string) => void }) => (
   <footer className="bg-edluar-dark dark:bg-[#0f1410] text-edluar-cream py-16 transition-colors duration-300">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid md:grid-cols-4 gap-12">
         <div className="col-span-1 md:col-span-2">
-          <div className="flex items-center space-x-2 mb-6">
+          <div className="flex items-center space-x-2 mb-6 cursor-pointer" onClick={() => onNavigate('home')}>
             <Leaf className="w-6 h-6 text-edluar-pale" />
             <span className="text-2xl font-serif font-bold">Edluar</span>
           </div>
@@ -465,20 +490,20 @@ const Footer = () => (
         <div>
           <h4 className="font-bold mb-6 text-white">Product</h4>
           <ul className="space-y-3 text-edluar-cream/60">
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Features</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Integrations</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Pricing</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Changelog</a></li>
+            <li><button onClick={() => onNavigate('features')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Features</button></li>
+            <li><button onClick={() => onNavigate('integrations')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Integrations</button></li>
+            <li><button onClick={() => onNavigate('pricing')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Pricing</button></li>
+            <li><button onClick={() => onNavigate('changelog')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Changelog</button></li>
           </ul>
         </div>
         <div>
           <h4 className="font-bold mb-6 text-white">Company</h4>
           <ul className="space-y-3 text-edluar-cream/60">
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">About Us</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Careers</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Blog</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Contact</a></li>
-            <li><a href="#" className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all">Privacy Policy</a></li>
+            <li><button onClick={() => onNavigate('about')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">About Us</button></li>
+            <li><button onClick={() => onNavigate('careers')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Careers</button></li>
+            <li><button onClick={() => onNavigate('blog')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Blog</button></li>
+            <li><button onClick={() => onNavigate('contact')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Contact</button></li>
+            <li><button onClick={() => onNavigate('privacy')} className="hover:text-white hover:underline decoration-edluar-pale decoration-2 transition-all text-left">Privacy Policy</button></li>
           </ul>
         </div>
       </div>
@@ -515,7 +540,7 @@ const ScrollToTop = () => {
   return (
     <button
       onClick={scrollToTop}
-      className={`fixed bottom-8 right-8 p-3 rounded-full bg-edluar-moss dark:bg-edluar-sage text-white shadow-lg hover:bg-edluar-dark dark:hover:bg-edluar-moss focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep transition-all duration-300 z-50 ${
+      className={`fixed bottom-8 right-8 p-3 rounded-full bg-edluar-moss dark:bg-edluar-sage text-white shadow-lg hover:bg-edluar-dark dark:hover:bg-edluar-moss focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-edluar-moss dark:focus:ring-offset-edluar-deep transition-all duration-500 ease-in-out z-50 transform ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'
       }`}
       aria-label="Scroll to top"
@@ -528,6 +553,9 @@ const ScrollToTop = () => {
 const App: React.FC = () => {
   const [scrollY, setScrollY] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [page, setPage] = useState('home');
+  const [navParams, setNavParams] = useState<any>({});
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -560,91 +588,178 @@ const App: React.FC = () => {
     }
   };
 
+  const handleNavigate = (target: string, params?: any) => {
+    setNavParams(params || {});
+    
+    if (target === 'login') {
+      setAuthMode(params?.mode || 'login');
+    }
+
+    if (target === 'about') {
+      setPage('about');
+      window.scrollTo(0, 0);
+    } else if (target === 'careers') {
+      setPage('careers');
+      window.scrollTo(0, 0);
+    } else if (target === 'blog') {
+      setPage('blog');
+      window.scrollTo(0, 0);
+    } else if (target === 'blog-post') {
+      setPage('blog-post');
+      window.scrollTo(0, 0);
+    } else if (target === 'contact') {
+      setPage('contact');
+      window.scrollTo(0, 0);
+    } else if (target === 'privacy') {
+      setPage('privacy');
+      window.scrollTo(0, 0);
+    } else if (target === 'login') {
+      setPage('login');
+      window.scrollTo(0, 0);
+    } else if (target === 'dashboard') {
+      setPage('dashboard');
+      window.scrollTo(0, 0);
+    } else {
+      setPage('home');
+      // If navigating to home specific section, logic is handled in header click or below
+      // For Footer clicks on home sections:
+      if (['features', 'customer', 'pricing', 'faq'].includes(target)) {
+         setTimeout(() => {
+            const el = document.getElementById(target);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+         }, 100);
+      } else {
+         window.scrollTo(0, 0);
+      }
+    }
+  };
+
+  if (page === 'login') {
+      return (
+          <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
+             <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
+             <LoginPage onNavigate={handleNavigate} initialMode={authMode} />
+          </div>
+      );
+  }
+
+  if (page === 'dashboard') {
+     return (
+        <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
+           <DashboardPage onNavigate={handleNavigate} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+        </div>
+     );
+  }
+
   return (
     <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep selection:bg-edluar-pale dark:selection:bg-edluar-moss selection:text-edluar-dark dark:selection:text-white transition-colors duration-300">
-      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
+      <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
       
-      {/* Hero Section */}
-      <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center space-x-2 bg-white/60 dark:bg-edluar-surface/60 backdrop-blur-sm border border-edluar-pale dark:border-edluar-moss/30 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up transition-colors duration-300">
-              <span className="flex h-2 w-2 rounded-full bg-edluar-moss dark:bg-edluar-sage animate-pulse"></span>
-              <span className="text-sm font-medium text-edluar-dark/80 dark:text-edluar-cream/80">Edluar 2.0 is now live</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-7xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-8 leading-tight tracking-tight">
-              Cultivate Your Dream Team with <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-edluar-moss to-edluar-sage dark:from-edluar-sage dark:to-edluar-pale">Intelligent Simplicity.</span>
-            </h1>
-            
-            <p className="text-xl text-edluar-dark/70 dark:text-edluar-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
-              Edluar combines organic workflows with AI precision to make recruitment human again. Grow your workforce sustainably.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
-              <Button variant="primary" size="lg" className="w-full sm:w-auto">Start Free Trial</Button>
-              <Button variant="outline" size="lg" className="w-full sm:w-auto group">
-                Watch Demo 
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </div>
-          </div>
+      {page === 'home' ? (
+        <>
+          {/* Hero Section */}
+          <section className="relative pt-20 pb-32 overflow-hidden">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="text-center max-w-4xl mx-auto">
+                <div className="inline-flex items-center space-x-2 bg-white/60 dark:bg-edluar-surface/60 backdrop-blur-sm border border-edluar-pale dark:border-edluar-moss/30 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up transition-colors duration-300">
+                  <span className="flex h-2 w-2 rounded-full bg-edluar-moss dark:bg-edluar-sage animate-pulse"></span>
+                  <span className="text-sm font-medium text-edluar-dark/80 dark:text-edluar-cream/80">Edluar 2.0 is now live</span>
+                </div>
+                
+                <h1 className="text-5xl md:text-7xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-8 leading-tight tracking-tight">
+                  Cultivate Your Dream Team with <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-edluar-moss to-edluar-sage dark:from-edluar-sage dark:to-edluar-pale">Intelligent Simplicity.</span>
+                </h1>
+                
+                <p className="text-xl text-edluar-dark/70 dark:text-edluar-cream/70 mb-10 max-w-2xl mx-auto leading-relaxed">
+                  Edluar combines organic workflows with AI precision to make recruitment human again. Grow your workforce sustainably.
+                </p>
+                
+                <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                  <Button 
+                    variant="primary" 
+                    size="lg" 
+                    className="w-full sm:w-auto" 
+                    onClick={() => handleNavigate('login', { mode: 'signup' })}
+                  >
+                    Start Free Trial
+                  </Button>
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto group">
+                    Watch Demo 
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+              </div>
 
-          {/* Abstract Hero Visual using Palette */}
-          <div className="mt-20 relative mx-auto max-w-5xl">
-            <div className="aspect-[16/9] bg-gradient-to-tr from-edluar-sage to-edluar-pale dark:from-edluar-moss dark:to-edluar-sage rounded-2xl shadow-2xl overflow-hidden relative border-4 border-white/50 dark:border-edluar-surface/50">
-               {/* Mock UI Elements */}
-               <div className="absolute inset-4 bg-edluar-cream/90 dark:bg-edluar-deep/90 backdrop-blur rounded-xl shadow-inner p-6 transition-colors duration-300">
-                  <div className="flex justify-between items-center mb-8 border-b border-edluar-pale dark:border-edluar-moss/30 pb-4">
-                    <div className="flex space-x-2">
-                       <div className="w-3 h-3 rounded-full bg-red-300 dark:bg-red-400"></div>
-                       <div className="w-3 h-3 rounded-full bg-yellow-300 dark:bg-yellow-400"></div>
-                       <div className="w-3 h-3 rounded-full bg-green-300 dark:bg-green-400"></div>
-                    </div>
-                    <div className="h-4 w-32 bg-edluar-pale dark:bg-edluar-moss/30 rounded-full"></div>
-                  </div>
-                  <div className="flex gap-6">
-                    <div className="w-1/4 space-y-3">
-                       <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3">
-                          <div className="h-2 w-12 bg-edluar-sage dark:bg-edluar-moss rounded mb-2"></div>
-                          <div className="h-2 w-20 bg-edluar-pale dark:bg-edluar-moss/40 rounded"></div>
-                       </div>
-                       <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-70"></div>
-                       <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-50"></div>
-                    </div>
-                    <div className="flex-1 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-6 space-y-4">
-                        <div className="flex justify-between">
-                           <div className="h-8 w-48 bg-edluar-dark/10 dark:bg-edluar-cream/10 rounded"></div>
-                           <div className="h-8 w-24 bg-edluar-moss rounded text-white text-xs flex items-center justify-center">Hire</div>
+              {/* Abstract Hero Visual using Palette */}
+              <div className="mt-20 relative mx-auto max-w-5xl">
+                <div className="aspect-[16/9] bg-gradient-to-tr from-edluar-sage to-edluar-pale dark:from-edluar-moss dark:to-edluar-sage rounded-2xl shadow-2xl overflow-hidden relative border-4 border-white/50 dark:border-edluar-surface/50">
+                   {/* Mock UI Elements */}
+                   <div className="absolute inset-4 bg-edluar-cream/90 dark:bg-edluar-deep/90 backdrop-blur rounded-xl shadow-inner p-6 transition-colors duration-300">
+                      <div className="flex justify-between items-center mb-8 border-b border-edluar-pale dark:border-edluar-moss/30 pb-4">
+                        <div className="flex space-x-2">
+                           <div className="w-3 h-3 rounded-full bg-red-300 dark:bg-red-400"></div>
+                           <div className="w-3 h-3 rounded-full bg-yellow-300 dark:bg-yellow-400"></div>
+                           <div className="w-3 h-3 rounded-full bg-green-300 dark:bg-green-400"></div>
                         </div>
-                        <div className="h-4 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
-                        <div className="h-4 w-3/4 bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
-                        <div className="h-32 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded mt-4"></div>
-                    </div>
-                  </div>
-               </div>
+                        <div className="h-4 w-32 bg-edluar-pale dark:bg-edluar-moss/30 rounded-full"></div>
+                      </div>
+                      <div className="flex gap-6">
+                        <div className="w-1/4 space-y-3">
+                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3">
+                              <div className="h-2 w-12 bg-edluar-sage dark:bg-edluar-moss rounded mb-2"></div>
+                              <div className="h-2 w-20 bg-edluar-pale dark:bg-edluar-moss/40 rounded"></div>
+                           </div>
+                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-70"></div>
+                           <div className="h-24 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-3 opacity-50"></div>
+                        </div>
+                        <div className="flex-1 bg-white dark:bg-edluar-surface rounded-lg shadow-sm border border-edluar-pale dark:border-edluar-moss/20 p-6 space-y-4">
+                            <div className="flex justify-between">
+                               <div className="h-8 w-48 bg-edluar-dark/10 dark:bg-edluar-cream/10 rounded"></div>
+                               <div className="h-8 w-24 bg-edluar-moss rounded text-white text-xs flex items-center justify-center">Hire</div>
+                            </div>
+                            <div className="h-4 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
+                            <div className="h-4 w-3/4 bg-edluar-cream dark:bg-edluar-deep/50 rounded"></div>
+                            <div className="h-32 w-full bg-edluar-cream dark:bg-edluar-deep/50 rounded mt-4"></div>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Background Decorative Circles with Parallax */}
-        <div 
-          className="absolute top-1/4 -left-20 w-96 h-96 bg-edluar-pale/30 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear"
-          style={{ transform: `translateY(${scrollY * 0.2}px)` }}
-        ></div>
-        <div 
-          className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-edluar-sage/20 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear"
-          style={{ transform: `translateY(${-scrollY * 0.1}px)` }}
-        ></div>
-      </section>
+            {/* Background Decorative Circles with Parallax & Organic Float Animation */}
+            <div 
+              className="absolute top-1/4 -left-20 w-96 h-96 bg-edluar-pale/30 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear animate-float"
+              style={{ transform: `translateY(${scrollY * 0.2}px)` }}
+            ></div>
+            <div 
+              className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-edluar-sage/20 dark:bg-edluar-moss/10 rounded-full blur-3xl mix-blend-multiply dark:mix-blend-normal filter transition-all duration-100 ease-linear animate-float-delayed"
+              style={{ transform: `translateY(${-scrollY * 0.1}px)` }}
+            ></div>
+          </section>
 
-      <FeaturesSection />
-      <TestimonialsSection />
-      <AIDemo />
-      <PricingSection />
-      <FAQSection />
-      <Footer />
+          <FeaturesSection />
+          <TestimonialsSection onNavigate={handleNavigate} />
+          <AIDemo />
+          <PricingSection onNavigate={handleNavigate} />
+          <FAQSection />
+        </>
+      ) : page === 'about' ? (
+        <AboutPage />
+      ) : page === 'careers' ? (
+        <CareersPage />
+      ) : page === 'blog' ? (
+        <BlogPage onNavigate={handleNavigate} />
+      ) : page === 'blog-post' ? (
+        <BlogPostPage postId={navParams.id} onNavigate={handleNavigate} />
+      ) : page === 'contact' ? (
+        <ContactPage />
+      ) : page === 'privacy' ? (
+        <PrivacyPolicyPage />
+      ) : null}
+      
+      <Footer onNavigate={handleNavigate} />
       <ScrollToTop />
     </div>
   );
