@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edluar - Natural Recruitment</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              edluar: {
+                cream: '#F2F5E5',
+                pale: '#D6E3C3',
+                sage: '#A2C09C',
+                moss: '#708472',
+                dark: '#4A574B', 
+                deep: '#161f17', // Dark mode background
+                surface: '#1f2b21', // Dark mode card background
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['Merriweather', 'serif'],
+            },
+            animation: {
+              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+              'float': 'float 8s ease-in-out infinite',
+              'float-delayed': 'floatDelayed 10s ease-in-out infinite',
+            },
+            keyframes: {
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+                '50%': { transform: 'translateY(-20px) translateX(10px)' },
+              },
+              floatDelayed: {
+                '0%, 100%': { transform: 'translateY(0) translateX(0)' },
+                '50%': { transform: 'translateY(20px) translateX(-10px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #F2F5E5;
+        color: #4A574B;
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      /* Dark mode body override is handled by tailwind class on parent, 
+         but we ensure smooth transition here */
+      .dark body {
+        background-color: #161f17;
+        color: #F2F5E5;
+      }
+      
+      h1, h2, h3, h4, h5, h6 {
+        font-family: 'Merriweather', serif;
+      }
+      /* Custom scrollbar for the demo output */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(162, 192, 156, 0.1);
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #A2C09C;
+        border-radius: 3px;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
