@@ -2,173 +2,81 @@ import { Request, Response } from 'express';
 import { SecurityKernel } from '../core/SecurityKernel';
 import { UserRepository } from '../repositories/UserRepository';
 
-/**
- * AuthController - High Logic Authentication Flow
- * Implements signup, login, session persistence, and OAuth integration
- */
 export class AuthController {
-
-    /**
-     * SIGNUP - Force user registration first
-     */
+    // ASYNC SIGNUP
     static async signup(req: Request, res: Response) {
         try {
             const { email, password, name } = req.body;
+            if (!email || !password || !name) return res.status(400).json({ error: 'Missing fields' });
 
-            // Validation
-            if (!email || !password || !name) {
-                return res.status(400).json({ error: 'Email, password, and name are required' });
-            }
+            // Await the async DB call
+            const existing = await UserRepository.findByEmail(email);
+            if (existing) return res.status(409).json({ error: 'User already exists.' });
 
-            // 1. Check if user exists (Prevent Duplicates)
-            const existing = UserRepository.findByEmail(email);
-            if (existing) {
-                return res.status(409).json({ error: 'User already exists. Please login.' });
-            }
-
-            // 2. Hash Password (High Complexity Pattern)
             const hashedPassword = await SecurityKernel.hashPassword(password);
+            const newUser = await UserRepository.create({ email, password: hashedPassword, name });
+            const token = SecurityKernel.generateSessionToken({ id: newUser.id, email: newUser.email });
 
-            // 3. Persist to SQLite via Repository
-            const newUser = UserRepository.create({
-                email,
-                password: hashedPassword,
-                name,
-                provider: 'local'
-            });
-
-            // 4. Issue Session Token
-            const token = SecurityKernel.generateSessionToken({
-                id: newUser.id,
-                email: newUser.email
-            });
-
-            return res.status(201).json({
-                token,
-                user: {
-                    id: newUser.id,
-                    name: newUser.name,
-                    email: newUser.email
-                }
-            });
-        } catch (error: any) {
-            console.error('Signup error:', error);
-            return res.status(500).json({ error: 'Internal server error during signup' });
+            res.status(201).json({ token, user: newUser });
+        } catch (error) {
+            console.error('Signup Fail:', error);
+            res.status(500).json({ error: 'Internal Error' });
         }
     }
 
-    /**
-     * LOGIN - Standard authentication
-     */
+    // ASYNC LOGIN
     static async login(req: Request, res: Response) {
         try {
             const { email, password } = req.body;
+            const user = await UserRepository.findByEmail(email);
 
-            if (!email || !password) {
-                return res.status(400).json({ error: 'Email and password are required' });
-            }
+            if (!user || !user.password) return res.status(401).json({ error: 'Invalid credentials' });
 
-            // 1. Find user
-            const user = UserRepository.findByEmail(email);
-            if (!user) {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
+            const valid = await SecurityKernel.verifyPassword(user.password, password);
+            if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
-            // 2. Verify password
-            if (!user.password) {
-                return res.status(401).json({ error: 'Please use social login for this account' });
-            }
-
-            const isValid = await SecurityKernel.verifyPassword(user.password, password);
-            if (!isValid) {
-                return res.status(401).json({ error: 'Invalid credentials' });
-            }
-
-            // 3. Generate token
-            const token = SecurityKernel.generateSessionToken({
-                id: user.id,
-                email: user.email
-            });
-
-            return res.json({
-                token,
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email
-                }
-            });
+            const token = SecurityKernel.generateSessionToken({ id: user.id, email: user.email });
+            res.json({ token, user });
         } catch (error) {
-            console.error('Login error:', error);
-            return res.status(500).json({ error: 'Internal server error during login' });
+            console.error('Login Fail:', error);
+            res.status(500).json({ error: 'Internal Error' });
         }
     }
 
     /**
-     * ME - Persistence Check (Refresh Logic)
-     * This enables "remember me" functionality
-     */
-    static async me(req: Request, res: Response) {
-        try {
-            const token = SecurityKernel.extractTokenFromHeader(req.headers.authorization);
-
-            if (!token) {
-                return res.status(401).json({ error: 'No token provided' });
-            }
-
-            const payload = SecurityKernel.validateSession(token);
-            if (!payload) {
-                return res.status(403).json({ error: 'Invalid or expired token' });
-            }
-
-            const user = UserRepository.findById(payload.id);
-            if (!user) {
-                return res.status(404).json({ error: 'User not found' });
-            }
-
-            return res.json({
-                user: {
-                    id: user.id,
-                    name: user.name,
-                    email: user.email
-                }
-            });
-        } catch (error) {
-            console.error('Session validation error:', error);
-            return res.status(500).json({ error: 'Internal server error' });
-        }
-    }
-
-    /**
-     * SOCIAL LOGIN - OAuth Strategy (Google/LinkedIn)
-     * Implements "Upsert" logic: create if not exists, otherwise login
-     */
-    /**
-     * SOCIAL LOGIN - Ghost Simulation Mode
-     * Enforces "Existing User Only" rule per prompt requirements.
+     * SOCIAL LOGIN - "Shadow Profile" Logic
+     * If user exists: Login.
+     * If user missing: Auto-Signup (Shadow) -> Login.
      */
     static async socialLogin(req: Request, res: Response) {
         try {
             const { email, name, provider, socialId } = req.body;
 
-            // 1. Strict Gate: Check if user exists
-            const user = UserRepository.findByEmail(email);
+            if (!email) return res.status(400).json({ error: 'Email is required' });
 
+            // 1. ATOMIC LOOKUP
+            let user = await UserRepository.findByEmail(email);
+
+            // 2. SHADOW CREATION (If user doesn't exist, create them instantly)
             if (!user) {
-                // The Prompt required: "FAIL if email does not exist"
-                // This simulates a "Login" flow where auto-registration is disabled for security
-                return res.status(404).json({
-                    error: 'Account not found. Please sign up with email first to link your account.'
+                console.log(`[Auth] Creating Shadow Profile for ${email}`);
+                user = await UserRepository.create({
+                    email,
+                    name: name || email.split('@')[0],
+                    password: null, // Social users have no password
+                    provider: provider || 'social',
+                    socialId: socialId
                 });
             }
 
-            // 2. If exists, issue token (Login Success)
-            // Optional: Update social_id if linking accounts
-
+            // 3. ISSUE TOKEN (Login Success)
             const token = SecurityKernel.generateSessionToken({
                 id: user.id,
                 email: user.email
             });
+
+            // 4. Update Telemetry
+            await UserRepository.updateLoginTimestamp(user.id);
 
             return res.json({
                 token,
@@ -179,8 +87,24 @@ export class AuthController {
                 }
             });
         } catch (error) {
-            console.error('Social login error:', error);
+            console.error('Social Login Critical Failure:', error);
             return res.status(500).json({ error: 'Internal server error' });
         }
+    }
+
+    // ME CHECK
+    static async me(req: Request, res: Response) {
+        try {
+            const token = SecurityKernel.extractTokenFromHeader(req.headers.authorization);
+            if (!token) return res.status(401).json({ error: 'No token' });
+
+            const payload = SecurityKernel.validateSession(token);
+            if (!payload) return res.status(403).json({ error: 'Invalid token' });
+
+            const user = await UserRepository.findById(payload.id);
+            if (!user) return res.status(404).json({ error: 'User not found' });
+
+            res.json({ user });
+        } catch (e) { res.status(500).json({ error: 'Session Error' }); }
     }
 }

@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_social_id ON users(social_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_social_id ON users(social_id);
 
 -- Candidates Table
 CREATE TABLE IF NOT EXISTS candidates (
@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS candidates (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_candidates_user_id ON candidates(user_id);
-CREATE INDEX idx_candidates_status ON candidates(status);
-CREATE INDEX idx_candidates_email ON candidates(email);
+CREATE INDEX IF NOT EXISTS idx_candidates_user_id ON candidates(user_id);
+CREATE INDEX IF NOT EXISTS idx_candidates_status ON candidates(status);
+CREATE INDEX IF NOT EXISTS idx_candidates_email ON candidates(email);
 
 -- Job Openings Table
 CREATE TABLE IF NOT EXISTS job_openings (
@@ -48,8 +48,8 @@ CREATE TABLE IF NOT EXISTS job_openings (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_job_openings_user_id ON job_openings(user_id);
-CREATE INDEX idx_job_openings_status ON job_openings(status);
+CREATE INDEX IF NOT EXISTS idx_job_openings_user_id ON job_openings(user_id);
+CREATE INDEX IF NOT EXISTS idx_job_openings_status ON job_openings(status);
 
 CREATE TABLE IF NOT EXISTS posts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

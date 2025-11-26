@@ -1,9 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, ArrowRight, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from './Button';
 
 
-import { blogPosts } from '../data/blogData';
+// import { blogPosts } from '../data/blogData'; // Removed static import
+
+interface BlogPost {
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  author: {
+    name: string;
+    role: string;
+    image: string;
+    bio: string;
+  };
+  date: string;
+  readTime: string;
+  image: string;
+}
 
 interface BlogPageProps {
   onNavigate: (page: string, params?: any) => void;
@@ -12,10 +29,32 @@ interface BlogPageProps {
 export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch('/api/posts');
+        if (response.ok) {
+          const data = await response.json();
+          setPosts(data);
+        } else {
+          console.error('Failed to fetch posts');
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   const categories = ['All', 'Culture', 'Hiring Tips', 'Product Updates', 'Case Studies'];
 
-  const filteredPosts = blogPosts.filter(post => {
+  const filteredPosts = posts.filter(post => {
     const matchesCategory = activeCategory === 'All' || post.category === activeCategory;
     const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
@@ -73,7 +112,11 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
       {/* Content Grid */}
       <section className="py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {filteredPosts.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <div className="animate-pulse text-edluar-moss text-xl font-medium">Loading fresh content...</div>
+            </div>
+          ) : filteredPosts.length === 0 ? (
             <div className="text-center py-20">
               <h3 className="text-2xl font-bold text-edluar-dark dark:text-edluar-cream mb-2">No posts found</h3>
               <p className="text-edluar-dark/60 dark:text-edluar-cream/60">Try adjusting your search or filters.</p>
@@ -116,13 +159,13 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
 
                     {/* Content Container */}
                     <div className={`relative z-20 flex flex-col h-full ${isBigCard
-                        ? 'justify-end p-8 md:p-12'
-                        : 'p-6 flex-grow'
+                      ? 'justify-end p-8 md:p-12'
+                      : 'p-6 flex-grow'
                       }`}>
                       <div className="flex items-center space-x-3 mb-4">
                         <span className={`px-2.5 py-0.5 rounded text-xs font-bold uppercase tracking-wider ${isBigCard
-                            ? 'bg-edluar-moss text-white'
-                            : 'bg-edluar-pale/50 dark:bg-edluar-moss/30 text-edluar-dark dark:text-edluar-pale'
+                          ? 'bg-edluar-moss text-white'
+                          : 'bg-edluar-pale/50 dark:bg-edluar-moss/30 text-edluar-dark dark:text-edluar-pale'
                           }`}>
                           {post.category}
                         </span>
@@ -137,15 +180,15 @@ export const BlogPage: React.FC<BlogPageProps> = ({ onNavigate }) => {
                       </div>
 
                       <h2 className={`font-serif font-bold mb-3 group-hover:underline decoration-2 underline-offset-4 ${isBigCard
-                          ? 'text-3xl md:text-5xl text-edluar-dark dark:text-white decoration-edluar-pale'
-                          : 'text-xl text-edluar-dark dark:text-edluar-cream decoration-edluar-moss'
+                        ? 'text-3xl md:text-5xl text-edluar-dark dark:text-white decoration-edluar-pale'
+                        : 'text-xl text-edluar-dark dark:text-edluar-cream decoration-edluar-moss'
                         }`}>
                         {post.title}
                       </h2>
 
                       <p className={`mb-6 line-clamp-3 ${isBigCard
-                          ? 'text-edluar-dark/90 dark:text-edluar-cream/90 text-lg max-w-2xl'
-                          : 'text-edluar-dark/70 dark:text-edluar-cream/70 text-sm'
+                        ? 'text-edluar-dark/90 dark:text-edluar-cream/90 text-lg max-w-2xl'
+                        : 'text-edluar-dark/70 dark:text-edluar-cream/70 text-sm'
                         }`}>
                         {post.excerpt}
                       </p>

@@ -33,10 +33,15 @@ export class EngineKernel {
         try {
             // Complex initialization logic
             console.log('🔧 EngineKernel: Bootstrapping security layer...');
+            console.log('🔧 EngineKernel: Initializing database schema...');
+
+            // Wait for database schema to be initialized
+            await this.dbManager.waitForInit();
+
             console.log('🔧 EngineKernel: Validating database connections...');
             console.log('🔧 EngineKernel: Loading environment configurations...');
 
-            // Simulate complex startup validation
+            // Perform health checks after schema is ready
             await this.performHealthChecks();
 
             this.isInitialized = true;
@@ -52,11 +57,13 @@ export class EngineKernel {
      */
     private async performHealthChecks(): Promise<void> {
         // Simulate health validation
-        const db = this.dbManager.getDatabase();
-        const result = db.prepare('SELECT 1 as health').get();
-
-        if (!result) {
-            throw new Error('Database health check failed');
+        try {
+            const result = await this.dbManager.get('SELECT 1 as health');
+            if (!result) {
+                throw new Error('Database health check failed');
+            }
+        } catch (error) {
+            throw new Error(`Database health check failed: ${error}`);
         }
     }
 
@@ -67,9 +74,5 @@ export class EngineKernel {
         console.log('🛑 EngineKernel: Initiating graceful shutdown...');
         this.dbManager.close();
         console.log('✅ EngineKernel: Shutdown complete');
-    }
-
-    public getDatabase() {
-        return this.dbManager.getDatabase();
     }
 }

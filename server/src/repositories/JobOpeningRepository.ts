@@ -1,4 +1,4 @@
-import { EngineKernel } from '../core/EngineKernel';
+import { DatabaseManager } from '../database/Database';
 
 interface JobOpening {
     id: number;
@@ -29,49 +29,42 @@ interface CreateJobOpeningData {
  */
 export class JobOpeningRepository {
     private static getDB() {
-        return EngineKernel.getInstance().getDatabase();
+        return DatabaseManager.getInstance();
     }
 
     /**
      * Find all job openings for a user
      */
-    static findByUserId(userId: number): JobOpening[] {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM job_openings WHERE user_id = ? ORDER BY created_at DESC');
-        return stmt.all(userId) as JobOpening[];
+    static async findByUserId(userId: number): Promise<JobOpening[]> {
+        return this.getDB().all('SELECT * FROM job_openings WHERE user_id = ? ORDER BY created_at DESC', [userId]);
     }
 
     /**
      * Find job opening by ID
      */
-    static findById(id: number): JobOpening | undefined {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM job_openings WHERE id = ?');
-        return stmt.get(id) as JobOpening | undefined;
+    static async findById(id: number): Promise<JobOpening | undefined> {
+        return this.getDB().get('SELECT * FROM job_openings WHERE id = ?', [id]);
     }
 
     /**
      * Create new job opening
      */
-    static create(data: CreateJobOpeningData): JobOpening {
-        const db = this.getDB();
-
-        const stmt = db.prepare(`
-            INSERT INTO job_openings (user_id, title, description, department, location, employment_type, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        const result = stmt.run(
-            data.userId,
-            data.title,
-            data.description || null,
-            data.department || null,
-            data.location || null,
-            data.employmentType || 'full-time',
-            data.status || 'active'
+    static async create(data: CreateJobOpeningData): Promise<JobOpening> {
+        const result = await this.getDB().run(
+            `INSERT INTO job_openings (user_id, title, description, department, location, employment_type, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.userId,
+                data.title,
+                data.description || null,
+                data.department || null,
+                data.location || null,
+                data.employmentType || 'full-time',
+                data.status || 'active'
+            ]
         );
 
-        const newJob = this.findById(Number(result.lastInsertRowid));
+        const newJob = await this.findById(Number(result.lastID));
         if (!newJob) {
             throw new Error('Failed to create job opening');
         }
@@ -82,9 +75,7 @@ export class JobOpeningRepository {
     /**
      * Update job opening
      */
-    static update(id: number, data: Partial<CreateJobOpeningData>): JobOpening {
-        const db = this.getDB();
-
+    static async update(id: number, data: Partial<CreateJobOpeningData>): Promise<JobOpening> {
         const updates: string[] = [];
         const values: any[] = [];
 
@@ -104,15 +95,12 @@ export class JobOpeningRepository {
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(id);
 
-        const stmt = db.prepare(`
-            UPDATE job_openings 
-            SET ${updates.join(', ')}
-            WHERE id = ?
-        `);
+        await this.getDB().run(
+            `UPDATE job_openings SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
 
-        stmt.run(...values);
-
-        const updated = this.findById(id);
+        const updated = await this.findById(id);
         if (!updated) {
             throw new Error('Job opening not found');
         }
@@ -123,19 +111,15 @@ export class JobOpeningRepository {
     /**
      * Delete job opening
      */
-    static delete(id: number): boolean {
-        const db = this.getDB();
-        const stmt = db.prepare('DELETE FROM job_openings WHERE id = ?');
-        const result = stmt.run(id);
+    static async delete(id: number): Promise<boolean> {
+        const result = await this.getDB().run('DELETE FROM job_openings WHERE id = ?', [id]);
         return result.changes > 0;
     }
 
     /**
      * Find active job openings
      */
-    static findActive(userId: number): JobOpening[] {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM job_openings WHERE user_id = ? AND status = ?');
-        return stmt.all(userId, 'active') as JobOpening[];
+    static async findActive(userId: number): Promise<JobOpening[]> {
+        return this.getDB().all('SELECT * FROM job_openings WHERE user_id = ? AND status = ?', [userId, 'active']);
     }
 }

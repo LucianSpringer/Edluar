@@ -1,4 +1,4 @@
-import { EngineKernel } from '../core/EngineKernel';
+import { DatabaseManager } from '../database/Database';
 
 interface Candidate {
     id: number;
@@ -31,50 +31,43 @@ interface CreateCandidateData {
  */
 export class CandidateRepository {
     private static getDB() {
-        return EngineKernel.getInstance().getDatabase();
+        return DatabaseManager.getInstance();
     }
 
     /**
      * Find all candidates for a user
      */
-    static findByUserId(userId: number): Candidate[] {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM candidates WHERE user_id = ? ORDER BY created_at DESC');
-        return stmt.all(userId) as Candidate[];
+    static async findByUserId(userId: number): Promise<Candidate[]> {
+        return this.getDB().all('SELECT * FROM candidates WHERE user_id = ? ORDER BY created_at DESC', [userId]);
     }
 
     /**
      * Find candidate by ID
      */
-    static findById(id: number): Candidate | undefined {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM candidates WHERE id = ?');
-        return stmt.get(id) as Candidate | undefined;
+    static async findById(id: number): Promise<Candidate | undefined> {
+        return this.getDB().get('SELECT * FROM candidates WHERE id = ?', [id]);
     }
 
     /**
      * Create new candidate
      */
-    static create(data: CreateCandidateData): Candidate {
-        const db = this.getDB();
-
-        const stmt = db.prepare(`
-            INSERT INTO candidates (user_id, first_name, last_name, email, phone, resume_url, status, current_stage)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        const result = stmt.run(
-            data.userId,
-            data.firstName,
-            data.lastName,
-            data.email,
-            data.phone || null,
-            data.resumeUrl || null,
-            data.status || 'new',
-            data.currentStage || null
+    static async create(data: CreateCandidateData): Promise<Candidate> {
+        const result = await this.getDB().run(
+            `INSERT INTO candidates (user_id, first_name, last_name, email, phone, resume_url, status, current_stage)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.userId,
+                data.firstName,
+                data.lastName,
+                data.email,
+                data.phone || null,
+                data.resumeUrl || null,
+                data.status || 'new',
+                data.currentStage || null
+            ]
         );
 
-        const newCandidate = this.findById(Number(result.lastInsertRowid));
+        const newCandidate = await this.findById(Number(result.lastID));
         if (!newCandidate) {
             throw new Error('Failed to create candidate');
         }
@@ -85,9 +78,7 @@ export class CandidateRepository {
     /**
      * Update candidate
      */
-    static update(id: number, data: Partial<CreateCandidateData>): Candidate {
-        const db = this.getDB();
-
+    static async update(id: number, data: Partial<CreateCandidateData>): Promise<Candidate> {
         const updates: string[] = [];
         const values: any[] = [];
 
@@ -111,15 +102,12 @@ export class CandidateRepository {
         updates.push('updated_at = CURRENT_TIMESTAMP');
         values.push(id);
 
-        const stmt = db.prepare(`
-            UPDATE candidates 
-            SET ${updates.join(', ')}
-            WHERE id = ?
-        `);
+        await this.getDB().run(
+            `UPDATE candidates SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
 
-        stmt.run(...values);
-
-        const updated = this.findById(id);
+        const updated = await this.findById(id);
         if (!updated) {
             throw new Error('Candidate not found');
         }
@@ -130,19 +118,15 @@ export class CandidateRepository {
     /**
      * Delete candidate
      */
-    static delete(id: number): boolean {
-        const db = this.getDB();
-        const stmt = db.prepare('DELETE FROM candidates WHERE id = ?');
-        const result = stmt.run(id);
+    static async delete(id: number): Promise<boolean> {
+        const result = await this.getDB().run('DELETE FROM candidates WHERE id = ?', [id]);
         return result.changes > 0;
     }
 
     /**
      * Search candidates by status
      */
-    static findByStatus(userId: number, status: string): Candidate[] {
-        const db = this.getDB();
-        const stmt = db.prepare('SELECT * FROM candidates WHERE user_id = ? AND status = ?');
-        return stmt.all(userId, status) as Candidate[];
+    static async findByStatus(userId: number, status: string): Promise<Candidate[]> {
+        return this.getDB().all('SELECT * FROM candidates WHERE user_id = ? AND status = ?', [userId, status]);
     }
 }

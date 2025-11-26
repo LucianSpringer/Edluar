@@ -1,14 +1,11 @@
-import { GoogleGenAI } from "@google/genai";
+// Remove SDK import to reduce bundle size and avoid browser issues
+// import { GoogleGenAI } from "@google/genai";
 
-// Initialize the client. 
-// Note: In a real production app, ensure this is handled securely.
-// For this demo, we assume the environment has the key.
 const apiKey = process.env.API_KEY || '';
-const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
 
 export const generateJobDescription = async (role: string, skills: string): Promise<string> => {
-  if (!ai) {
-    // Fallback if no API key is present for the demo UI to still look functional
+  if (!apiKey) {
+    // Fallback if no API key is present
     return new Promise(resolve => {
       setTimeout(() => {
         resolve(`(Demo Mode - No API Key)\n\nPosition: ${role}\n\nWe are looking for a talented ${role} to join our growing team. You should be proficient in ${skills}.\n\nResponsibilities:\n- Collaborate with cross-functional teams.\n- Design and implement scalable solutions.\n- Maintain high code quality.\n\nApply now to join the Edluar family!`);
@@ -17,13 +14,34 @@ export const generateJobDescription = async (role: string, skills: string): Prom
   }
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Write a concise, professional, and inviting job description for a "${role}". Key required skills: "${skills}". Keep it under 150 words. Tone: Professional yet organic and welcoming.`,
+    const model = 'gemini-2.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `Write a concise, professional, and inviting job description for a "${role}". Key required skills: "${skills}". Keep it under 150 words. Tone: Professional yet organic and welcoming.`
+          }]
+        }]
+      })
     });
-    return response.text || "Could not generate description.";
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Error connecting to AI service. Please try again later.";
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Gemini API Error:", errorData);
+      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Could not generate description.";
+
+  } catch (error: any) {
+    console.error("Gemini Service Error:", error);
+    return `Error: ${error.message || "Connection failed"}`;
   }
 };

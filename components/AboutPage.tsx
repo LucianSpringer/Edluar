@@ -2,7 +2,11 @@
 import React from 'react';
 import { Leaf, Heart, Users, Globe, Sprout, Wind, Target } from 'lucide-react';
 
-export const AboutPage = () => {
+interface AboutPageProps {
+  onNavigate: (page: string) => void;
+}
+
+export const AboutPage: React.FC<AboutPageProps> = ({ onNavigate }) => {
   const values = [
     {
       icon: <Sprout className="w-8 h-8 text-edluar-moss" />,
@@ -72,9 +76,9 @@ export const AboutPage = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="relative">
               <div className="absolute -top-4 -left-4 w-24 h-24 bg-edluar-pale dark:bg-edluar-moss/30 rounded-full -z-10"></div>
-              <img 
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" 
-                alt="Team collaborating" 
+              <img
+                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
+                alt="Team collaborating"
                 className="rounded-2xl shadow-xl transform rotate-2 hover:rotate-0 transition-transform duration-500"
               />
               <div className="absolute -bottom-6 -right-6 p-6 bg-edluar-cream dark:bg-edluar-deep rounded-xl shadow-lg max-w-xs border border-edluar-pale dark:border-edluar-moss/20 hidden md:block">
@@ -139,9 +143,9 @@ export const AboutPage = () => {
               <div key={idx} className="group text-center">
                 <div className="relative mb-6 inline-block">
                   <div className="absolute inset-0 bg-edluar-moss rounded-full opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
+                  <img
+                    src={member.image}
+                    alt={member.name}
                     className="w-48 h-48 rounded-full object-cover border-4 border-edluar-pale dark:border-edluar-moss/30 mx-auto"
                   />
                 </div>
@@ -161,7 +165,10 @@ export const AboutPage = () => {
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-serif font-bold text-white mb-6">Ready to grow with us?</h2>
           <p className="text-edluar-pale mb-8 text-lg">We are always looking for passionate people to join our team.</p>
-          <button className="bg-white text-edluar-dark hover:bg-edluar-pale font-bold py-3 px-8 rounded-full transition-colors shadow-lg">
+          <button
+            onClick={() => onNavigate('careers')}
+            className="bg-white text-edluar-dark hover:bg-edluar-pale font-bold py-3 px-8 rounded-full transition-colors shadow-lg"
+          >
             View Open Roles
           </button>
         </div>

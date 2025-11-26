@@ -267,39 +267,171 @@ const IntegrationsSection = ({ onNavigate }: { onNavigate: (page: string) => voi
   );
 };
 
-const TestimonialsSection = ({ onNavigate }: { onNavigate: (page: string) => void }) => {
-  return (
-    <section className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-4">
-            Trusted by Forward-Thinking Teams
-          </h2>
+const CustomerSection = ({ onNavigate }: { onNavigate: (page: string, params?: any) => void }) => {
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  const filters = ['All', 'Agencies', 'Tech', 'Product'];
+
+  // DATA: IDs match server/src/scripts/seed.ts (High Yield)
+  const stories = [
+    {
+      company: "Canopy Corp",
+      logo: (
+        <div className="flex items-center gap-2 text-white">
+          <Trees className="w-10 h-10" />
+          <span className="text-3xl font-bold">Canopy</span>
         </div>
-        <div className="grid md:grid-cols-3 gap-8">
-          {[
-            {
-              quote: "Edluar transformed how we hire. The AI descriptions are spot on.",
-              author: "Sarah J.",
-              role: "HR Director"
-            },
-            {
-              quote: "Finally, an ATS that doesn't feel like a spreadsheet from 1999.",
-              author: "Mark T.",
-              role: "Startup Founder"
-            },
-            {
-              quote: "The collaboration features helped us align our team instantly.",
-              author: "Emily R.",
-              role: "Talent Acquisition"
-            }
-          ].map((t, i) => (
-            <div key={i} className="p-8 bg-edluar-cream/30 dark:bg-edluar-surface/50 rounded-2xl shadow-sm border border-edluar-pale dark:border-edluar-moss/20">
-              <Quote className="w-8 h-8 text-edluar-moss mb-4" />
-              <p className="text-edluar-dark/80 dark:text-edluar-cream/80 mb-6 italic">"{t.quote}"</p>
-              <div>
-                <div className="font-bold text-edluar-dark dark:text-edluar-cream">{t.author}</div>
-                <div className="text-sm text-edluar-dark/60 dark:text-edluar-cream/60">{t.role}</div>
+      ),
+      category: "Agencies",
+      headline: "How Canopy Corp grew their remote team by 200% sustainably.",
+      bgColor: "bg-[#2F3E30]", // Dark Green
+      id: 6
+    },
+    {
+      company: "Nimbus",
+      logo: (
+        <div className="flex items-center gap-2 text-sky-900">
+          <CloudSun className="w-10 h-10" />
+          <span className="text-3xl font-black tracking-tight">Nimbus</span>
+        </div>
+      ),
+      category: "Tech",
+      headline: "How Nimbus Reduced Time-to-Hire by 40%",
+      bgColor: "bg-[#E0F2FE]", // Sky Blue
+      id: 2
+    },
+    {
+      company: "Sprout Labs",
+      logo: (
+        <div className="flex items-center gap-2 text-edluar-dark">
+          <Sprout className="w-10 h-10" />
+          <span className="text-3xl font-bold">Sprout</span>
+        </div>
+      ),
+      category: "Product",
+      headline: "Cultivating top engineering talent from the ground up.",
+      bgColor: "bg-edluar-pale", // Pale Green
+      id: 7
+    },
+    {
+      company: "Flora Fin",
+      logo: (
+        <div className="flex items-center gap-2 text-rose-900">
+          <Flower2 className="w-10 h-10" />
+          <span className="text-3xl font-serif italic font-bold">Flora Fin</span>
+        </div>
+      ),
+      category: "Tech",
+      headline: "Flora Fin's organic approach to high-stakes financial hiring.",
+      bgColor: "bg-[#FFF1F2]", // Rose
+      id: 8
+    },
+    {
+      company: "Evergreen",
+      logo: (
+        <div className="flex items-center gap-2 text-edluar-dark">
+          <Leaf className="w-10 h-10" />
+          <span className="text-3xl font-bold">Evergreen</span>
+        </div>
+      ),
+      category: "Agencies",
+      headline: "Keeping candidate relationships fresh with automated nurturing.",
+      bgColor: "bg-edluar-cream", // Cream
+      id: 9
+    },
+    {
+      company: "Summit Systems",
+      logo: (
+        <div className="flex items-center gap-2 text-white">
+          <BarChart3 className="w-10 h-10" />
+          <span className="text-3xl font-bold">SUMMIT</span>
+        </div>
+      ),
+      category: "Tech",
+      headline: "Scaling to the summit: Hiring 50 devs in 3 months.",
+      bgColor: "bg-gray-900", // Dark Gray
+      id: 10
+    }
+  ];
+
+  const filteredStories = activeFilter === 'All'
+    ? stories
+    : stories.filter(s => s.category === activeFilter);
+
+  return (
+    <section id="customer" ref={sectionRef} className="py-24 bg-white dark:bg-edluar-deep transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header Grid */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16 items-end">
+          <h2 className="text-6xl md:text-7xl font-serif font-black text-edluar-dark dark:text-edluar-cream leading-[0.9] tracking-tight">
+            Customer <br /> stories
+          </h2>
+          <p className="text-lg text-edluar-dark/70 dark:text-edluar-cream/60 md:pl-10 leading-relaxed">
+            Thousands of teams rely on Edluar to hire better, manage HR smoothly, and create a recruitment experience everyone loves. See what they've built with us.
+          </p>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-3 mb-12">
+          {filters.map(filter => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-300 ${activeFilter === filter
+                ? 'bg-edluar-dark text-white dark:bg-edluar-cream dark:text-edluar-dark'
+                : 'bg-transparent text-edluar-dark dark:text-edluar-cream hover:bg-edluar-pale/30 dark:hover:bg-edluar-moss/20'
+                }`}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        {/* Story Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredStories.map((story, i) => (
+            <div
+              key={i}
+              className={`group cursor-pointer flex flex-col h-full transition-all duration-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+              style={{ transitionDelay: `${i * 100}ms` }}
+              onClick={() => onNavigate('blog-post', { id: story.id })}
+            >
+              {/* Logo Area */}
+              <div className={`h-64 rounded-2xl ${story.bgColor} flex items-center justify-center mb-6 transition-transform duration-500 group-hover:scale-[1.02] shadow-sm border border-black/5 dark:border-white/5`}>
+                {story.logo}
+              </div>
+
+              {/* Text Area */}
+              <div className="flex flex-col flex-grow">
+                <span className="text-xs font-bold uppercase tracking-wider text-edluar-dark dark:text-edluar-cream mb-3">
+                  {story.category}
+                </span>
+                <h3 className="text-xl font-medium text-edluar-dark dark:text-edluar-cream leading-snug group-hover:underline decoration-2 decoration-edluar-pale underline-offset-4">
+                  {story.headline}
+                </h3>
               </div>
             </div>
           ))}
@@ -767,13 +899,13 @@ const App: React.FC = () => {
 
           <FeaturesSection />
           <IntegrationsSection onNavigate={handleNavigate} />
-          <TestimonialsSection onNavigate={handleNavigate} />
+          <CustomerSection onNavigate={handleNavigate} />
           <AIDemo />
           <PricingSection onNavigate={handleNavigate} />
           <FAQSection />
         </>
       ) : page === 'about' ? (
-        <AboutPage />
+        <AboutPage onNavigate={handleNavigate} />
       ) : page === 'careers' ? (
         <CareersPage />
       ) : page === 'blog' ? (

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Linkedin, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Linkedin, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
 import { SocialLoginMock } from './SocialLoginMock';
@@ -15,6 +15,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const { login } = useAuth();
 
   // Social Login State
@@ -37,6 +38,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
 
     // Basic validation
     if (!formData.email || !formData.password) {
@@ -72,14 +74,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
         throw new Error(data.error || 'Authentication failed');
       }
 
-      // Save token and user to auth context
-      login(data.token, data.user);
+      // --- LOGIC BRANCHING ---
+      if (isSignUp) {
+        // CASE 1: SIGNUP SUCCESS
+        setIsLoading(false);
+        setSuccessMessage('Account created successfully! Please log in.');
+        setIsSignUp(false); // Switch to Login Mode
+        setFormData(prev => ({ ...prev, password: '' })); // Clear password for security
+      } else {
+        // CASE 2: LOGIN SUCCESS
+        login(data.token, data.user);
+        onNavigate('dashboard');
+      }
 
-      // Navigate to dashboard
-      onNavigate('dashboard');
     } catch (err: any) {
       setError(err.message || 'An error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -127,7 +136,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
         <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-edluar-sage/20 rounded-full blur-3xl"></div>
 
-        <div className="relative z-10">
+        <div className="relative z-50">
           <button
             onClick={() => onNavigate('home')}
             className="flex items-center space-x-2 text-edluar-pale hover:text-white transition-colors group"
@@ -175,7 +184,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 sm:p-8 lg:p-12 relative">
         <button
           onClick={() => onNavigate('home')}
-          className="lg:hidden absolute top-8 left-8 p-2 rounded-full hover:bg-edluar-pale/50 dark:hover:bg-edluar-moss/20 text-edluar-dark dark:text-edluar-cream transition-colors"
+          className="lg:hidden absolute top-8 left-8 p-2 rounded-full hover:bg-edluar-pale/50 dark:hover:bg-edluar-moss/20 text-edluar-dark dark:text-edluar-cream transition-colors z-50"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
@@ -306,6 +315,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
                 <div className="flex items-center space-x-2 text-red-500 text-sm bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-200 dark:border-red-900/30 animate-fade-in">
                   <AlertCircle className="w-4 h-4 shrink-0" />
                   <span>{error}</span>
+                </div>
+              )}
+
+              {successMessage && (
+                <div className="flex items-center space-x-2 text-green-600 text-sm bg-green-50 dark:bg-green-900/10 p-3 rounded-lg border border-green-200 dark:border-green-900/30 animate-fade-in">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{successMessage}</span>
                 </div>
               )}
 
