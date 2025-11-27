@@ -715,12 +715,26 @@ const App: React.FC = () => {
   const [page, setPage] = useState('home');
   const [navParams, setNavParams] = useState<any>({});
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const { user, isLoading } = useAuth();
 
+  // PERSISTENCE LOGIC: If user is logged in, force Dashboard
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    if (!isLoading && user) {
+      setPage('dashboard');
+    }
+  }, [isLoading, user]);
+
+  // Prevent "Flash of Landing Page"
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-edluar-moss rounded-xl"></div>
+          <p className="text-edluar-dark/50 dark:text-edluar-cream/50 font-serif">Edluar...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');

@@ -32,8 +32,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
     name: '',
     email: '',
     password: '',
-    agreeToTerms: false
+    agreeToTerms: false,
+    rememberMe: false
   });
+
+  // Initialize Remember Me
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('remembered_email');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail, rememberMe: true }));
+    }
+  }, []);
+
+  const handleForgotPassword = () => {
+    if (!formData.email) {
+      setError('Please enter your email address to reset your password.');
+      return;
+    }
+    // Mock Reset Logic
+    setSuccessMessage(`Password reset link sent to ${formData.email}`);
+    setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,6 +102,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
         setFormData(prev => ({ ...prev, password: '' })); // Clear password for security
       } else {
         // CASE 2: LOGIN SUCCESS
+        if (formData.rememberMe) {
+          localStorage.setItem('remembered_email', formData.email);
+        } else {
+          localStorage.removeItem('remembered_email');
+        }
         login(data.token, data.user);
         onNavigate('dashboard');
       }
@@ -132,9 +156,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
 
       {/* Left Column - Visual (Desktop Only) */}
       <div className="hidden lg:flex lg:w-1/2 bg-edluar-moss dark:bg-edluar-surface relative overflow-hidden flex-col justify-between p-12 text-white">
-        <div className="absolute top-0 right-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-edluar-sage/20 rounded-full blur-3xl"></div>
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80"
+            alt="Workspace"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Gradient Scrim - The "Professional" Method */}
+        <div className="absolute inset-0 z-0 bg-gradient-to-t from-edluar-moss/90 via-edluar-moss/40 to-edluar-moss/10 dark:from-edluar-surface/95 dark:via-edluar-surface/60 dark:to-edluar-surface/20"></div>
+
+        {/* Decorative Blurs (Optional, kept for extra depth) */}
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl z-0 mix-blend-overlay"></div>
 
         <div className="relative z-50">
           <button
@@ -270,7 +305,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
                 <div className="flex justify-between items-center ml-1">
                   <label className="text-sm font-medium text-edluar-dark dark:text-edluar-cream">Password</label>
                   {!isSignUp && (
-                    <button type="button" className="text-xs font-medium text-edluar-moss hover:text-edluar-dark dark:hover:text-edluar-sage transition-colors">
+                    <button type="button" onClick={handleForgotPassword} className="text-xs font-medium text-edluar-moss hover:text-edluar-dark dark:hover:text-edluar-sage transition-colors">
                       Forgot password?
                     </button>
                   )}
@@ -294,7 +329,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
                 </div>
               </div>
 
-              {isSignUp && (
+              {isSignUp ? (
                 <div className="flex items-start space-x-3">
                   <div className="flex items-center h-5">
                     <input
@@ -308,6 +343,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, initialMode = 
                   <label htmlFor="terms" className="text-sm text-edluar-dark/70 dark:text-edluar-cream/70 leading-tight">
                     I agree to the <a href="#" className="font-medium text-edluar-moss hover:underline">Terms of Service</a> and <a href="#" className="font-medium text-edluar-moss hover:underline">Privacy Policy</a>.
                   </label>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <input
+                    id="rememberMe"
+                    type="checkbox"
+                    checked={formData.rememberMe}
+                    onChange={(e) => setFormData({ ...formData, rememberMe: e.target.checked })}
+                    className="w-4 h-4 rounded border-edluar-pale text-edluar-moss focus:ring-edluar-moss cursor-pointer"
+                  />
+                  <label htmlFor="rememberMe" className="text-sm text-edluar-dark/70 dark:text-edluar-cream/70 cursor-pointer">Remember me</label>
                 </div>
               )}
 
