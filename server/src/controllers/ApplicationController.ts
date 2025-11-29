@@ -3,6 +3,7 @@ import { ApplicationRepository } from '../repositories/ApplicationRepository';
 import { ActivityRepository } from '../repositories/ActivityRepository';
 import { CandidateRepository } from '../repositories/CandidateRepository';
 import { JobOpeningRepository } from '../repositories/JobOpeningRepository';
+import { NotificationRepository } from '../repositories/NotificationRepository';
 import { DatabaseManager } from '../database/Database';
 
 export class ApplicationController {
@@ -52,6 +53,21 @@ export class ApplicationController {
                 type: 'status_change',
                 content: 'Application submitted'
             });
+
+            // 5. Create Notification for Job Owner
+            try {
+                const job = await JobOpeningRepository.findById(jobId);
+                if (job) {
+                    await NotificationRepository.create({
+                        userId: job.user_id,
+                        type: 'new_candidate',
+                        resourceId: application.id,
+                        content: `New candidate ${firstName} ${lastName || ''} applied for ${job.title}`
+                    });
+                }
+            } catch (notifError) {
+                console.error('Failed to create notification:', notifError);
+            }
 
             res.status(201).json({ application, candidate });
         } catch (error) {
@@ -207,6 +223,28 @@ export class ApplicationController {
         } catch (error) {
             console.error('Error fetching scheduled activities:', error);
             res.status(500).json({ error: 'Failed to fetch scheduled activities' });
+        }
+    }
+    /**
+     * Get all applications (for Global Dashboard)
+     */
+    static async getAll(req: Request, res: Response) {
+        try {
+            const applications = await ApplicationRepository.findAll();
+
+            // Group by status for Kanban columns
+            const grouped = {
+                applied: applications.filter(a => a.status === 'applied'),
+                phone_screen: applications.filter(a => a.status === 'phone_screen'),
+                interview: applications.filter(a => a.status === 'interview'),
+                offer: applications.filter(a => a.status === 'offer'),
+                hired: applications.filter(a => a.status === 'hired')
+            };
+
+            res.json(grouped);
+        } catch (error) {
+            console.error('Error fetching all applications:', error);
+            res.status(500).json({ error: 'Failed to fetch applications' });
         }
     }
 }

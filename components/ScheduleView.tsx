@@ -5,6 +5,7 @@ import { CalendarGrid } from './schedule/CalendarGrid';
 import { EventForm } from './schedule/EventForm';
 import { CalendarEvent, EventType, DraftEvent } from './schedule/types';
 import { toUTC } from '../src/utils/dateUtils';
+import { useAuth } from '../context/AuthContext';
 
 export const ScheduleView = () => {
     const [currentWeekStart, setCurrentWeekStart] = useState(new Date());
@@ -80,24 +81,31 @@ export const ScheduleView = () => {
         });
     };
 
+    const { user } = useAuth();
+
     const handleSave = async () => {
         if (!draftTime || !draftMeta.title) return;
+
+        // Validation: Ensure we have a user ID
+        const userId = user?.id || 1; // Fallback to 1 for dev, but ideally should block
+        if (!user?.id) {
+            console.warn("⚠️ No authenticated user found, defaulting to ID 1 for dev.");
+        }
 
         setIsSaving(true);
         try {
             const startUTC = toUTC(draftTime.start);
-            const endUTC = toUTC(addMinutes(draftTime.start, draftTime.durationMinutes));
 
             const payload = {
                 title: draftMeta.title,
                 description: draftMeta.description,
-                interview_date: startUTC, // Backend expects interview_date
-                duration: draftTime.durationMinutes, // Backend expects duration (not duration_minutes)
+                interview_date: startUTC,
+                duration: draftTime.durationMinutes,
                 event_type: draftMeta.type,
                 candidate_id: null,
                 job_id: null,
-                scheduled_by: 1, // TODO: Get from AuthContext
-                location: 'Remote' // Default location
+                scheduled_by: userId,
+                location: 'Remote'
             };
 
             const response = await fetch('http://localhost:5000/api/interviews', {
@@ -109,11 +117,15 @@ export const ScheduleView = () => {
             if (response.ok) {
                 await fetchEvents();
                 setDraftTime(null); // Close form
+                alert("✅ Event saved successfully!");
             } else {
-                console.error("Failed to save event");
+                const errorData = await response.json();
+                console.error("Failed to save event:", errorData);
+                alert(`❌ Failed to save event: ${errorData.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error("Error saving event:", error);
+            alert(`❌ Network or Logic Error: ${error}`);
         } finally {
             setIsSaving(false);
         }

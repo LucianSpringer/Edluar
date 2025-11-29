@@ -2,70 +2,91 @@ import React from 'react';
 import { Search, Filter, Clock, MoreHorizontal, Plus } from 'lucide-react';
 
 export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
-    // Mock Data matching your screenshot
-    const allCandidates = [
-        {
-            id: 1,
-            name: "Esther Howard",
-            role: "Product Designer",
-            stage: "Screening",
-            date: "Applied 2d ago",
-            avatar: "https://i.pravatar.cc/150?u=1",
-            rating: 4,
-            jobId: 1
-        },
-        {
-            id: 2,
-            name: "Cameron Williamson",
-            role: "Product Designer",
-            stage: "New",
-            date: "Applied 1d ago",
-            avatar: "https://i.pravatar.cc/150?u=2",
-            rating: 0,
-            jobId: 1
-        },
-        {
-            id: 3,
-            name: "Robert Fox",
-            role: "Marketing Manager",
-            stage: "Interview",
-            date: "Applied 5d ago",
-            avatar: "https://i.pravatar.cc/150?u=3",
-            rating: 5,
-            jobId: 2
-        }
-    ];
+    const [candidates, setCandidates] = React.useState<any[]>([]);
+    const [loading, setLoading] = React.useState(true);
 
-    // Filter candidates by jobId if provided
-    const filteredCandidates = jobId
-        ? allCandidates.filter(c => c.jobId === jobId)
-        : allCandidates;
+    React.useEffect(() => {
+        if (jobId) {
+            fetchCandidates();
+        }
+    }, [jobId]);
+
+    const fetchCandidates = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/applications/job/${jobId}`);
+            const data = await res.json();
+            // The API returns an object { applied: [], phone_screen: [], ... }
+            // We need to flatten it or use it directly. 
+            // Let's flatten it for easier filtering/mapping if we want to keep the existing structure,
+            // OR better yet, let's use the object keys directly to map to columns.
+
+            // Flattening for now to match the existing "allCandidates" structure if possible, 
+            // but actually the API returns arrays by status.
+            // Let's just store the raw data and map it in the render.
+
+            // Wait, the API returns { applied: [...], ... }.
+            // The current component expects a flat list `allCandidates` and then filters it.
+            // Let's adapt the component to use the API response structure directly.
+
+            // Actually, let's flatten it to make it easier to work with the existing "filteredCandidates" logic if we want to keep it simple,
+            // or just rewrite the grouping logic.
+
+            const flatList: any[] = [];
+            Object.keys(data).forEach(status => {
+                data[status].forEach((c: any) => {
+                    flatList.push({
+                        ...c,
+                        stage: status, // 'applied', 'phone_screen', etc.
+                        name: `${c.first_name} ${c.last_name || ''}`,
+                        role: 'Candidate', // We don't have role in application, maybe fetch job title or just generic
+                        date: new Date(c.applied_at).toLocaleDateString(),
+                        avatar: c.avatar || `https://ui-avatars.com/api/?name=${c.first_name}+${c.last_name}&background=random`,
+                        rating: 0 // Default for now
+                    });
+                });
+            });
+            setCandidates(flatList);
+            setLoading(false);
+        } catch (err) {
+            console.error("Failed to fetch candidates", err);
+            setLoading(false);
+        }
+    };
+
+    // Status Mapping
+    const statusMap: Record<string, string> = {
+        'applied': 'New',
+        'phone_screen': 'Screening',
+        'interview': 'Interview',
+        'offer': 'Offer',
+        'hired': 'Hired'
+    };
 
     const candidateGroups = [
         {
             title: "New",
-            count: filteredCandidates.filter(c => c.stage === 'New').length,
-            candidates: filteredCandidates.filter(c => c.stage === 'New')
+            count: candidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied').length,
+            candidates: candidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied')
         },
         {
             title: "Screening",
-            count: filteredCandidates.filter(c => c.stage === 'Screening').length,
-            candidates: filteredCandidates.filter(c => c.stage === 'Screening')
+            count: candidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen').length,
+            candidates: candidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen')
         },
         {
             title: "Interview",
-            count: filteredCandidates.filter(c => c.stage === 'Interview').length,
-            candidates: filteredCandidates.filter(c => c.stage === 'Interview')
+            count: candidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview').length,
+            candidates: candidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview')
         },
         {
             title: "Offer",
-            count: filteredCandidates.filter(c => c.stage === 'Offer').length,
-            candidates: filteredCandidates.filter(c => c.stage === 'Offer')
+            count: candidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer').length,
+            candidates: candidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer')
         },
         {
             title: "Hired",
-            count: filteredCandidates.filter(c => c.stage === 'Hired').length,
-            candidates: filteredCandidates.filter(c => c.stage === 'Hired')
+            count: candidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired').length,
+            candidates: candidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired')
         }
     ];
 

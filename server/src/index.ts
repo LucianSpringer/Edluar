@@ -99,6 +99,12 @@ app.get('/api/pages/:slug', CompanyPageController.get);
 app.post('/api/pages', CompanyPageController.save);
 
 // Application Routes (Core ATS functionality)
+app.get('/api/applications', ApplicationController.getAll);
+
+// Notification Routes
+import { NotificationController } from './controllers/NotificationController';
+app.get('/api/notifications', NotificationController.getMine);
+app.patch('/api/notifications/:id/read', NotificationController.markRead);
 app.post('/api/applications', ApplicationController.create);
 app.get('/api/applications/job/:jobId', ApplicationController.getByJob);
 

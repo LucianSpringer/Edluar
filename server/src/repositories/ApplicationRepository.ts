@@ -116,4 +116,16 @@ export class ApplicationRepository {
             [status]
         );
     }
+    /**
+     * Find all applications
+     */
+    static async findAll(): Promise<Application[]> {
+        return this.getDB().all(
+            `SELECT a.*, 
+                    c.first_name, c.last_name, c.email, c.resume_url
+             FROM applications a
+             JOIN candidates c ON a.candidate_id = c.id
+             ORDER BY a.updated_at DESC, a.applied_at DESC`
+        );
+    }
 }

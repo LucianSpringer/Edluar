@@ -45,7 +45,15 @@ export class JobOpeningRepository {
      * Find all job openings for a user
      */
     static async findByUserId(userId: number): Promise<JobOpening[]> {
-        return this.getDB().all('SELECT * FROM job_openings WHERE user_id = ? ORDER BY created_at DESC', [userId]);
+        return this.getDB().all(`
+            SELECT j.*, 
+            (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id) as candidate_count,
+            (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.status = 'interview') as interview_count,
+            (SELECT COUNT(*) FROM applications a WHERE a.job_id = j.id AND a.status = 'offer') as offer_count
+            FROM job_openings j
+            WHERE j.user_id = ?
+            ORDER BY j.created_at DESC
+        `, [userId]);
     }
 
     /**

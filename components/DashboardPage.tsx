@@ -114,10 +114,32 @@ const conversations: Conversation[] = [
 ];
 
 // --- NEW FEATURE: CREATE JOB WIZARD
-const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onClose: () => void; onComplete: (data: any) => void }) => {
+import { findTemplate } from '../src/data/jobTemplates';
+
+// 1. CREATE JOB MODAL
+const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onClose: () => void; onComplete: (job: any) => void }) => {
    const [step, setStep] = useState(1);
-   const [data, setData] = useState({ title: '', type: 'Full-time', department: 'Product', location: 'Remote', strategy: 'post_and_form', template: 'Future Forward' });
    const [isCreating, setIsCreating] = useState(false);
+   const [matchedTemplate, setMatchedTemplate] = useState<{ keyword: string; content: string } | null>(null);
+   const [data, setData] = useState({
+      title: '',
+      type: 'Full-time',
+      department: 'Product',
+      location: 'Remote',
+      strategy: 'balanced', // 'speed' | 'balanced' | 'quality'
+      template: 'neon', // 'neon' | 'minimal' | 'corporate'
+      content_blocks: [] as any[], // Initialize content_blocks
+      formConfig: {
+         personalInfo: {
+            fullName: { enabled: true, required: true },
+            email: { enabled: true, required: true },
+            phone: { enabled: true, required: false },
+            linkedin: { enabled: true, required: false },
+            portfolio: { enabled: true, required: false }
+         },
+         questions: []
+      }
+   });
 
    if (!isOpen) return null;
 
@@ -206,10 +228,34 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
                            autoFocus
                            type="text"
                            value={data.title}
-                           onChange={(e) => setData({ ...data, title: e.target.value })}
+                           onChange={(e) => {
+                              setData({ ...data, title: e.target.value });
+                              // Check for template match
+                              const match = findTemplate(e.target.value);
+                              setMatchedTemplate(match);
+                           }}
                            className="w-full p-5 text-2xl bg-white dark:bg-black/20 border-2 border-gray-200 dark:border-white/10 rounded-xl focus:border-edluar-moss focus:ring-4 focus:ring-edluar-moss/10 outline-none transition-all placeholder:text-gray-300"
                            placeholder="e.g. Senior Product Designer"
                         />
+                        {matchedTemplate && (
+                           <button
+                              onClick={() => {
+                                 // Inject template
+                                 setData(prev => ({
+                                    ...prev,
+                                    content_blocks: [
+                                       { type: 'text', content: matchedTemplate.content },
+                                       ...prev.content_blocks.slice(1) // Keep other blocks if any, or just replace first
+                                    ]
+                                 }));
+                                 setMatchedTemplate(null); // Hide button after use
+                              }}
+                              className="mt-2 flex items-center gap-2 text-sm text-edluar-moss font-medium hover:underline animate-fade-in"
+                           >
+                              <span className="w-5 h-5 rounded-full bg-edluar-moss/10 flex items-center justify-center">✨</span>
+                              Use '{matchedTemplate.keyword}' description template?
+                           </button>
+                        )}
                      </div>
                      <div className="p-6 bg-blue-50 dark:bg-blue-900/10 rounded-xl border border-blue-100 dark:border-blue-900/30 flex gap-4">
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full h-fit"><Briefcase className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
@@ -556,7 +602,7 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
 };
 
 // 2. JOBS LIST VIEW
-const JobsListView = ({ onOpenCreate, onEdit }: { onOpenCreate: () => void; onEdit: (id: number) => void }) => {
+const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () => void; onEdit: (id: number) => void; onNavigate: (page: string, params?: any) => void }) => {
    const [jobs, setJobs] = useState<any[]>([]);
 
    useEffect(() => {
@@ -588,7 +634,7 @@ const JobsListView = ({ onOpenCreate, onEdit }: { onOpenCreate: () => void; onEd
    };
 
    if (editingJobId) {
-      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} />;
+      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onNavigate={onNavigate} />;
    }
 
    return (
@@ -617,9 +663,9 @@ const JobsListView = ({ onOpenCreate, onEdit }: { onOpenCreate: () => void; onEd
                      <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold capitalize">{job.status}</span>
                   </div>
                   <div className="mt-4 flex gap-4 text-sm text-gray-500">
-                     <span><strong>0</strong> Candidates</span>
-                     <span><strong>0</strong> Interviews</span>
-                     <span><strong>0</strong> Offers</span>
+                     <span><strong>{job.candidate_count || 0}</strong> Candidates</span>
+                     <span><strong>{job.interview_count || 0}</strong> Interviews</span>
+                     <span><strong>{job.offer_count || 0}</strong> Offers</span>
                      <div className="ml-auto flex gap-3">
                         <button
                            onClick={(e) => {
@@ -656,19 +702,38 @@ const ATSView = () => {
    const { user } = useAuth();
    const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
    const [applications, setApplications] = useState<any>({ applied: [], phone_screen: [], interview: [], offer: [], hired: [] });
-   const [selectedJobId, setSelectedJobId] = useState<number>(2); // Using test job ID
+   const [selectedJobId, setSelectedJobId] = useState<number | null>(null); // Null means "All Jobs"
+   const [jobs, setJobs] = useState<any[]>([]);
    const [automationPrompt, setAutomationPrompt] = useState<{ show: boolean; action: string | null; applicationId: number | null }>({ show: false, action: null, applicationId: null });
    const [activeCandidate, setActiveCandidate] = useState<any | null>(null);
    const [ratings, setRatings] = useState<Map<number, { average: number; count: number }>>(new Map());
 
-   // Fetch applications when component mounts
+   // Fetch jobs and applications on mount
+   useEffect(() => {
+      fetchJobs();
+   }, []);
+
    useEffect(() => {
       fetchApplications();
    }, [selectedJobId]);
 
+   const fetchJobs = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/jobs');
+         const data = await response.json();
+         setJobs(data);
+      } catch (error) {
+         console.error("Failed to fetch jobs:", error);
+      }
+   };
+
    const fetchApplications = async () => {
       try {
-         const response = await fetch(`http://localhost:5000/api/applications/job/${selectedJobId}`);
+         const url = selectedJobId
+            ? `http://localhost:5000/api/applications/job/${selectedJobId}`
+            : `http://localhost:5000/api/applications`; // Fetch all if no job selected
+
+         const response = await fetch(url);
          const data = await response.json();
          setApplications(data);
 
@@ -814,7 +879,19 @@ const ATSView = () => {
       >
          <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0B100D] animate-fade-in relative">
             <div className="h-16 bg-white dark:bg-edluar-deep border-b border-gray-200 dark:border-white/5 px-6 flex items-center justify-between flex-shrink-0">
-               <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Senior Product Designer <ChevronDown className="w-4 h-4" /></h1>
+               <div className="flex items-center gap-2 relative group">
+                  <select
+                     value={selectedJobId || ""}
+                     onChange={(e) => setSelectedJobId(e.target.value ? Number(e.target.value) : null)}
+                     className="text-xl font-bold text-gray-900 dark:text-white bg-transparent outline-none cursor-pointer appearance-none pr-8 z-10 relative"
+                  >
+                     <option value="" className="text-gray-900">All Jobs</option>
+                     {jobs.map(job => (
+                        <option key={job.id} value={job.id} className="text-gray-900">{job.title}</option>
+                     ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-gray-900 dark:text-white absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
+               </div>
                <div className="flex gap-2">
                   <Button variant="primary" size="sm"><Plus className="w-4 h-4 mr-2" /> Add Candidate</Button>
                </div>
@@ -1450,8 +1527,8 @@ const InboxView = () => {
    const fetchApplicationsWithActivities = async () => {
       try {
          setLoading(true);
-         // Fetch applications from all jobs (simplified - in production, filter by user/team)
-         const response = await fetch('http://localhost:5000/api/applications/job/2'); // Using test job
+         // Fetch applications from all jobs (Global Inbox)
+         const response = await fetch('http://localhost:5000/api/applications');
          const data = await response.json();
 
          // Flatten all applications from all stages
@@ -1926,6 +2003,55 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
    const [pendingJobData, setPendingJobData] = useState<any>(null);
 
+   // NOTIFICATIONS STATE
+   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+   const [notifications, setNotifications] = useState<any[]>([]);
+   const [unreadCount, setUnreadCount] = useState(0);
+
+   // Fetch notifications on mount
+   useEffect(() => {
+      fetchNotifications();
+      // Poll every 30 seconds for new notifications
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+   }, []);
+
+   const fetchNotifications = async () => {
+      try {
+         // Assuming user ID 1 for now or getting it from user object if available
+         const userId = (user as any)?.id || 1;
+         const response = await fetch(`http://localhost:5000/api/notifications?userId=${userId}`);
+         if (response.ok) {
+            const data = await response.json();
+            setNotifications(data.notifications);
+            setUnreadCount(data.unreadCount);
+         }
+      } catch (error) {
+         console.error("Failed to fetch notifications:", error);
+      }
+   };
+
+   const handleNotificationClick = async (notification: any) => {
+      if (!notification.is_read) {
+         try {
+            await fetch(`http://localhost:5000/api/notifications/${notification.id}/read`, { method: 'PATCH' });
+            // Update local state
+            setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, is_read: true } : n));
+            setUnreadCount(prev => Math.max(0, prev - 1));
+         } catch (error) {
+            console.error("Failed to mark notification as read:", error);
+         }
+      }
+
+      // Navigate based on type
+      if (notification.type === 'new_candidate') {
+         // If we have resource_id as application_id, we might want to go to candidates view
+         // For now, let's go to the candidates tab
+         setActiveView('candidates');
+         setIsNotificationsOpen(false);
+      }
+   };
+
    const handleLogout = () => { logout(); onNavigate('home'); };
 
    const handleCreateJob = (newJob: any) => {
@@ -2066,16 +2192,62 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-edluar-dark/40" />
                      <input type="text" placeholder="Search anything..." className="pl-9 pr-4 py-2 bg-white dark:bg-white/5 border border-edluar-pale dark:border-white/10 rounded-full text-sm focus:ring-2 focus:ring-edluar-moss/50 w-64 transition-all" />
                   </div>
-                  <button className="relative p-2 text-edluar-dark/60 hover:text-edluar-moss transition-colors">
-                     <Bell className="w-5 h-5" />
-                     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-edluar-cream"></span>
-                  </button>
+
+                  {/* NOTIFICATIONS */}
+                  <div className="relative">
+                     <button
+                        className="relative p-2 text-edluar-dark/60 hover:text-edluar-moss transition-colors"
+                        onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                     >
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-edluar-cream animate-pulse"></span>
+                        )}
+                     </button>
+
+                     {isNotificationsOpen && (
+                        <>
+                           <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)}></div>
+                           <div className="absolute top-full right-0 w-80 bg-white dark:bg-edluar-surface border border-edluar-pale dark:border-white/10 rounded-xl shadow-xl z-50 mt-2 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                              <div className="p-4 border-b border-edluar-pale/50 dark:border-white/5 flex justify-between items-center bg-edluar-cream/30 dark:bg-white/5">
+                                 <h3 className="font-bold text-edluar-dark dark:text-white text-sm">Notifications</h3>
+                                 {unreadCount > 0 && <span className="text-xs text-edluar-moss font-medium">{unreadCount} new</span>}
+                              </div>
+                              <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                                 {notifications.length === 0 ? (
+                                    <div className="p-8 text-center text-gray-400 text-sm">
+                                       No notifications yet
+                                    </div>
+                                 ) : (
+                                    notifications.map((notif: any) => (
+                                       <div
+                                          key={notif.id}
+                                          className={`p-4 border-b border-edluar-pale/30 dark:border-white/5 hover:bg-edluar-pale/20 dark:hover:bg-white/5 transition-colors cursor-pointer ${!notif.is_read ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                                          onClick={() => handleNotificationClick(notif)}
+                                       >
+                                          <div className="flex gap-3">
+                                             <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${!notif.is_read ? 'bg-blue-500' : 'bg-transparent'}`}></div>
+                                             <div>
+                                                <p className={`text-sm ${!notif.is_read ? 'font-semibold text-edluar-dark dark:text-white' : 'text-edluar-dark/70 dark:text-white/70'}`}>
+                                                   {notif.content}
+                                                </p>
+                                                <p className="text-xs text-gray-400 mt-1">{new Date(notif.created_at).toLocaleDateString()}</p>
+                                             </div>
+                                          </div>
+                                       </div>
+                                    ))
+                                 )}
+                              </div>
+                           </div>
+                        </>
+                     )}
+                  </div>
                </div>
             </div>
 
             <div className="flex-1 overflow-auto">
                {activeView === 'overview' && <OverviewView user={user} onOpenCreate={() => setIsJobModalOpen(true)} />}
-               {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} />}
+               {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} onNavigate={onNavigate} />}
                {activeView === 'candidates' && <ATSView />}
                {activeView === 'career_site' && <CareerSiteView pendingJobData={pendingJobData} onPublish={handleJobPublished} />}
                {activeView === 'calendar' && <ScheduleView />}

@@ -126,8 +126,9 @@ export class InterviewRepository {
              LEFT JOIN candidates c ON a.candidate_id = c.id
              LEFT JOIN users u ON i.scheduled_by = u.id
              LEFT JOIN job_openings j ON a.job_id = j.id
-             WHERE i.interview_date > datetime('now')
-             ORDER BY i.interview_date ASC`
+             LEFT JOIN job_openings j ON a.job_id = j.id
+             -- WHERE i.interview_date > datetime('now')
+             ORDER BY i.interview_date DESC`
         ) as InterviewWithDetails[];
 
         // Fetch attendees for each interview
