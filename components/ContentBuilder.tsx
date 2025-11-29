@@ -53,7 +53,25 @@ export interface ContentBlock {
     titleColor?: string;
     subtitleColor?: string;
     variant?: 'default' | 'display';
+    font?: string;
 }
+
+const MiniFontPicker = ({ value, onChange }: { value?: string, onChange: (font: string) => void }) => (
+    <div className="flex items-center gap-2 mt-2 mb-2">
+        <span className="text-[10px] font-bold text-gray-400 uppercase w-12">Font</span>
+        <select
+            value={value || ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="flex-1 p-1.5 text-xs bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded focus:border-green-500 outline-none dark:text-white"
+        >
+            <option value="">Default (Theme)</option>
+            <option value="Inter">Inter (Clean)</option>
+            <option value="Merriweather">Merriweather (Serif)</option>
+            <option value="Oswald">Oswald (Bold)</option>
+            <option value="Courier New">Mono (Code)</option>
+        </select>
+    </div>
+);
 
 const MiniColorPicker = ({ label, value, onChange }: { label: string, value?: string, onChange: (c: string) => void }) => (
     <div className="flex items-center gap-2 mt-2 mb-4">
@@ -292,6 +310,7 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({ blocks, onChange
                                 {block.type === 'header' && (
                                     <>
                                         <BuilderInput label="Heading Text" value={block.value} onChange={(v: string) => updateBlock(block.id, { value: v })} />
+                                        <MiniFontPicker value={block.font} onChange={(f) => updateBlock(block.id, { font: f })} />
                                         <div className="space-y-1.5 mb-3">
                                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Style Variant</label>
                                             <select
@@ -306,11 +325,15 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({ blocks, onChange
                                     </>
                                 )}
                                 {block.type === 'paragraph' && (
-                                    <BuilderInput label="Content" value={block.value} onChange={(v: string) => updateBlock(block.id, { value: v })} type="textarea" />
+                                    <>
+                                        <BuilderInput label="Content" value={block.value} onChange={(v: string) => updateBlock(block.id, { value: v })} type="textarea" />
+                                        <MiniFontPicker value={block.font} onChange={(f) => updateBlock(block.id, { font: f })} />
+                                    </>
                                 )}
                                 {block.type === 'hero' && (
                                     <>
                                         <BuilderInput label="Headline" value={block.value} onChange={(v: string) => updateBlock(block.id, { value: v })} />
+                                        <MiniFontPicker value={block.font} onChange={(f) => updateBlock(block.id, { font: f })} />
                                         <MiniColorPicker label="Color" value={block.titleColor} onChange={(c) => updateBlock(block.id, { titleColor: c })} />
 
                                         <BuilderInput label="Subtitle" value={block.subtitle} onChange={(v: string) => updateBlock(block.id, { subtitle: v })} type="textarea" />

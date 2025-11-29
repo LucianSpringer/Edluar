@@ -31,13 +31,37 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
     const [scorecardAverages, setScorecardAverages] = useState<{ skills_avg: number; culture_avg: number; count: number }>({ skills_avg: 0, culture_avg: 0, count: 0 });
     const [history, setHistory] = useState<any[]>([]);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [scorecardCriteria, setScorecardCriteria] = useState<string[]>([]);
 
     useEffect(() => {
         fetchReviews();
         fetchActivities();
         fetchScorecards();
         fetchHistory();
+        fetchScorecards();
+        fetchHistory();
+        fetchJobDetails();
     }, [application.id]);
+
+    const fetchJobDetails = async () => {
+        if (!application?.job_id) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/jobs/${application.job_id}`);
+            if (res.ok) {
+                const job = await res.json();
+                try {
+                    const config = JSON.parse(job.scorecard_config || '[]');
+                    if (config.length > 0) setScorecardCriteria(config);
+                    else setScorecardCriteria(['Technical Skills', 'Culture Fit']);
+                } catch (e) {
+                    setScorecardCriteria(['Technical Skills', 'Culture Fit']);
+                }
+            }
+        } catch (e) {
+            console.error("Job fetch failed", e);
+            setScorecardCriteria(['Technical Skills', 'Culture Fit']);
+        }
+    };
 
     const fetchHistory = async () => {
         if (!application?.candidate_id) return;
@@ -91,7 +115,7 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
         }
     };
 
-    const handleScorecardSubmit = async (data: { skills: number; culture: number; takeaways: string }) => {
+    const handleScorecardSubmit = async (data: { skills: number; culture: number; ratings: Record<string, number>; takeaways: string }) => {
         try {
             const response = await fetch(`http://localhost:5000/api/applications/${application.id}/scorecards`, {
                 method: 'POST',
@@ -101,6 +125,7 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                     reviewer_name: 'Current User', // In a real app, this would come from auth context
                     skills_rating: data.skills,
                     culture_rating: data.culture,
+                    ratings: data.ratings,
                     takeaways: data.takeaways
                 })
             });
@@ -627,7 +652,9 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                 isOpen={showScorecardModal}
                 onClose={() => setShowScorecardModal(false)}
                 onSubmit={handleScorecardSubmit}
+                onSubmit={handleScorecardSubmit}
                 candidateName={`${application.first_name} ${application.last_name}`}
+                criteria={scorecardCriteria}
             />
 
             <ScheduleInterviewModal

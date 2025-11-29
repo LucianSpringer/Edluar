@@ -4,34 +4,43 @@ import { Star, X, CheckCircle2 } from 'lucide-react';
 interface ScorecardModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (data: { skills: number; culture: number; takeaways: string }) => void;
+    onSubmit: (data: { skills: number; culture: number; ratings: Record<string, number>; takeaways: string }) => void;
     candidateName: string;
+    criteria?: string[];
 }
 
-export const ScorecardModal: React.FC<ScorecardModalProps> = ({ isOpen, onClose, onSubmit, candidateName }) => {
-    const [scores, setScores] = useState({ skills: 0, culture: 0 });
+export const ScorecardModal: React.FC<ScorecardModalProps> = ({
+    isOpen, onClose, onSubmit, candidateName,
+    criteria = ['Technical Skills', 'Culture Fit'] // Default fallback
+}) => {
+    const [ratings, setRatings] = useState<Record<string, number>>({});
     const [takeaways, setTakeaways] = useState('');
 
     if (!isOpen) return null;
 
-    const handleStarClick = (category: 'skills' | 'culture', rating: number) => {
-        setScores(prev => ({ ...prev, [category]: rating }));
+    const handleStarClick = (criterion: string, rating: number) => {
+        setRatings(prev => ({ ...prev, [criterion]: rating }));
     };
 
     const handleSubmit = () => {
-        onSubmit({ ...scores, takeaways });
+        // Calculate legacy scores for backward compatibility if needed, or just pass 0
+        // For now, let's try to map "Technical Skills" and "Culture Fit" if they exist, otherwise 0
+        const skills = ratings['Technical Skills'] || 0;
+        const culture = ratings['Culture Fit'] || 0;
+
+        onSubmit({ skills, culture, ratings, takeaways });
         // Reset form
-        setScores({ skills: 0, culture: 0 });
+        setRatings({});
         setTakeaways('');
     };
 
-    const StarRating = ({ category, value }: { category: 'skills' | 'culture', value: number }) => (
+    const StarRating = ({ criterion, value }: { criterion: string, value: number }) => (
         <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((star) => (
                 <button
                     key={star}
                     type="button"
-                    onClick={() => handleStarClick(category, star)}
+                    onClick={() => handleStarClick(criterion, star)}
                     className="p-1 focus:outline-none transition-transform hover:scale-110"
                 >
                     <Star
@@ -59,23 +68,16 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({ isOpen, onClose,
 
                 {/* Body */}
                 <div className="p-8 space-y-8">
-                    {/* Section 1: Skills */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Technical Skills</label>
-                        <div className="flex items-center justify-between bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Rate competency</span>
-                            <StarRating category="skills" value={scores.skills} />
+                    {/* Dynamic Criteria Sections */}
+                    {criteria.map((criterion) => (
+                        <div key={criterion} className="space-y-3">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{criterion}</label>
+                            <div className="flex items-center justify-between bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Rate competency</span>
+                                <StarRating criterion={criterion} value={ratings[criterion] || 0} />
+                            </div>
                         </div>
-                    </div>
-
-                    {/* Section 2: Culture */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Culture Fit</label>
-                        <div className="flex items-center justify-between bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Rate values alignment</span>
-                            <StarRating category="culture" value={scores.culture} />
-                        </div>
-                    </div>
+                    ))}
 
                     {/* Section 3: Takeaways */}
                     <div className="space-y-3">
@@ -98,7 +100,7 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({ isOpen, onClose,
                         Cancel
                     </button>
                     <button
-                        disabled={!scores.skills || !scores.culture || !takeaways.trim()}
+                        disabled={criteria.some(c => !ratings[c]) || !takeaways.trim()}
                         onClick={handleSubmit}
                         className="px-4 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                     >

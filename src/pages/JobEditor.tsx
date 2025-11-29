@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, ChevronDown, Check, Settings, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, ChevronDown, Check, Settings, Calendar, Trash2, Plus, Star } from 'lucide-react';
 import { SITE_TEMPLATES } from '../data/templates';
 import { ContentBuilder } from '../../components/ContentBuilder';
 import { ApplyFormControls, FormConfig } from '../../components/ApplyFormControls';
@@ -16,7 +16,7 @@ interface JobEditorProps {
 }
 
 export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob }) => {
-    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design'>('post');
+    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design' | 'scorecard'>('post');
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [closeDate, setCloseDate] = useState(''); // YYYY-MM-DD
@@ -44,6 +44,9 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
         personalInfo: { name: true, email: true, linkedin: true, education: false, resume: true, coverLetter: true, phone: true, portfolio: true },
         questions: []
     });
+
+    // Scorecard State
+    const [scorecardCriteria, setScorecardCriteria] = useState<string[]>([]);
 
     // Theme State
     const [theme, setTheme] = useState({
@@ -81,6 +84,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
 
                 data.content_blocks = parseJSON(data.content_blocks, []);
                 setFormConfig(parseJSON(data.application_form_config, formConfig));
+                setScorecardCriteria(parseJSON(data.scorecard_config, []));
                 setTheme(parseJSON(data.theme_config, theme));
                 setCloseDate(data.close_date ? data.close_date.split('T')[0] : '');
 
@@ -102,6 +106,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                 body: JSON.stringify({
                     content_blocks: JSON.stringify(job.content_blocks),
                     application_form_config: JSON.stringify(formConfig),
+                    scorecard_config: JSON.stringify(scorecardCriteria),
                     theme_config: JSON.stringify(theme),
                     close_date: closeDate || null
                 })
@@ -176,6 +181,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                         { id: 'post', icon: Layout, label: 'Job Post' },
                         { id: 'design', icon: Palette, label: 'Design' },
                         { id: 'form', icon: FileText, label: 'Apply Form' },
+                        { id: 'scorecard', icon: Star, label: 'Scorecard' },
                         { id: 'candidates', icon: Users, label: 'Candidates' }
                     ].map(tab => (
                         <button
@@ -278,6 +284,56 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                             {activeTab === 'form' && (
                                 <ApplyFormControls config={formConfig} onChange={setFormConfig} />
                             )}
+                            {activeTab === 'scorecard' && (
+                                <div className="p-6 space-y-6 animate-fade-in">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-bold text-gray-400 uppercase">Scorecard Criteria</label>
+                                            <button
+                                                onClick={() => setScorecardCriteria([...scorecardCriteria, ''])}
+                                                className="text-xs font-bold text-green-600 hover:text-green-700 flex items-center gap-1"
+                                            >
+                                                <Plus className="w-3 h-3" /> Add Criterion
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {scorecardCriteria.length === 0 && (
+                                                <div className="text-sm text-gray-500 italic text-center py-4 bg-gray-50 dark:bg-white/5 rounded-lg border border-dashed border-gray-200 dark:border-white/10">
+                                                    No criteria defined. Add specific skills or traits to evaluate.
+                                                </div>
+                                            )}
+                                            {scorecardCriteria.map((criterion, idx) => (
+                                                <div key={idx} className="flex gap-2 group">
+                                                    <input
+                                                        value={criterion}
+                                                        onChange={(e) => {
+                                                            const newCriteria = [...scorecardCriteria];
+                                                            newCriteria[idx] = e.target.value;
+                                                            setScorecardCriteria(newCriteria);
+                                                        }}
+                                                        className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:border-green-500 dark:text-white transition-all"
+                                                        placeholder="e.g. React Proficiency"
+                                                        autoFocus={criterion === ''}
+                                                    />
+                                                    <button
+                                                        onClick={() => setScorecardCriteria(scorecardCriteria.filter((_, i) => i !== idx))}
+                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                        <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
+                                            <strong>How it works:</strong> These criteria will appear in the candidate evaluation modal. Reviewers can rate each criterion on a 1-5 star scale.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* RIGHT PREVIEW */}
@@ -285,6 +341,35 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                             {activeTab === 'form' ? (
                                 <div className="p-10 w-full flex justify-center">
                                     <ApplyFormPreview config={formConfig} />
+                                </div>
+                            ) : activeTab === 'scorecard' ? (
+                                <div className="p-10 w-full flex justify-center items-start">
+                                    <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                                        <div className="p-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-white/5">
+                                            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" /> Scorecard Preview
+                                            </h3>
+                                        </div>
+                                        <div className="p-6 space-y-6">
+                                            {scorecardCriteria.length > 0 ? scorecardCriteria.map((c, i) => (
+                                                <div key={i} className="space-y-2">
+                                                    <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">{c || 'New Criterion'}</label>
+                                                    <div className="flex items-center justify-between bg-gray-50 dark:bg-white/5 p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Rate competency</span>
+                                                        <div className="flex gap-1">
+                                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                                <Star key={star} className="w-5 h-5 text-gray-300" />
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )) : (
+                                                <div className="text-center py-8 text-gray-400 text-sm">
+                                                    Add criteria on the left to see a preview here.
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="w-full max-w-4xl min-h-[800px] bg-white dark:bg-black shadow-xl my-10 rounded-xl overflow-hidden" style={{ backgroundColor: theme.bg }}>

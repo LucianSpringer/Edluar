@@ -8,6 +8,7 @@ interface JobOpening {
     content_blocks: string | null; // JSON string
     application_form_config: string | null; // JSON string
     theme_config: string | null; // JSON string
+    scorecard_config?: string; // JSON string
     department: string | null;
     location: string | null;
     employment_type: string;
@@ -27,6 +28,7 @@ interface CreateJobOpeningData {
     content_blocks?: string; // JSON string
     application_form_config?: string; // JSON string
     theme_config?: string; // JSON string
+    scorecard_config?: string; // JSON string
     department?: string;
     location?: string;
     employmentType?: string;
@@ -70,8 +72,8 @@ export class JobOpeningRepository {
      */
     static async create(data: CreateJobOpeningData): Promise<JobOpening> {
         const result = await this.getDB().run(
-            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, department, location, employment_type, status, close_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, scorecard_config, department, location, employment_type, status, close_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.userId,
                 data.title,
@@ -79,6 +81,7 @@ export class JobOpeningRepository {
                 data.content_blocks || null,
                 data.application_form_config || null,
                 data.theme_config || null,
+                data.scorecard_config || null,
                 data.department || null,
                 data.location || null,
                 data.employmentType || 'full-time',
@@ -121,6 +124,10 @@ export class JobOpeningRepository {
         if (data.theme_config !== undefined) {
             updates.push('theme_config = ?');
             values.push(data.theme_config);
+        }
+        if (data.scorecard_config !== undefined) {
+            updates.push('scorecard_config = ?');
+            values.push(data.scorecard_config);
         }
         if (data.department !== undefined) {
             updates.push('department = ?');

@@ -7,6 +7,7 @@ export interface Scorecard {
     reviewer_name?: string;
     skills_rating: 1 | 2 | 3 | 4 | 5;
     culture_rating: 1 | 2 | 3 | 4 | 5;
+    ratings?: string; // JSON string
     takeaways: string;
     created_at?: string;
     updated_at?: string;
@@ -24,14 +25,15 @@ export class ScorecardRepository {
         const db = DatabaseManager.getInstance();
 
         const result = await db.run(
-            `INSERT INTO scorecards (application_id, reviewer_id, reviewer_name, skills_rating, culture_rating, takeaways) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO scorecards (application_id, reviewer_id, reviewer_name, skills_rating, culture_rating, ratings, takeaways) 
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.application_id,
                 data.reviewer_id,
                 data.reviewer_name || null,
                 data.skills_rating,
                 data.culture_rating,
+                data.ratings || null,
                 data.takeaways
             ]
         );
@@ -90,7 +92,7 @@ export class ScorecardRepository {
     /**
      * Update a scorecard
      */
-    static async update(id: number, data: Partial<Pick<Scorecard, 'skills_rating' | 'culture_rating' | 'takeaways'>>): Promise<void> {
+    static async update(id: number, data: Partial<Pick<Scorecard, 'skills_rating' | 'culture_rating' | 'ratings' | 'takeaways'>>): Promise<void> {
         const db = DatabaseManager.getInstance();
 
         const updates: string[] = [];
@@ -104,6 +106,11 @@ export class ScorecardRepository {
         if (data.culture_rating !== undefined) {
             updates.push('culture_rating = ?');
             values.push(data.culture_rating);
+        }
+
+        if (data.ratings !== undefined) {
+            updates.push('ratings = ?');
+            values.push(data.ratings);
         }
 
         if (data.takeaways !== undefined) {

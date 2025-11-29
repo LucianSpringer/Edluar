@@ -9,10 +9,10 @@ export class ScorecardController {
     static async create(req: Request, res: Response) {
         try {
             const { id } = req.params; // application_id
-            const { reviewer_id, reviewer_name, skills_rating, culture_rating, takeaways } = req.body;
+            const { reviewer_id, reviewer_name, skills_rating, culture_rating, ratings, takeaways } = req.body;
 
-            if (!reviewer_id || !skills_rating || !culture_rating || !takeaways) {
-                return res.status(400).json({ error: 'reviewer_id, skills_rating, culture_rating, and takeaways are required' });
+            if (!reviewer_id || !takeaways) {
+                return res.status(400).json({ error: 'reviewer_id and takeaways are required' });
             }
 
             if (skills_rating < 1 || skills_rating > 5 || culture_rating < 1 || culture_rating > 5) {
@@ -27,7 +27,12 @@ export class ScorecardController {
 
             if (existing) {
                 // Update existing scorecard instead
-                await ScorecardRepository.update(existing.id!, { skills_rating, culture_rating, takeaways });
+                await ScorecardRepository.update(existing.id!, {
+                    skills_rating: skills_rating || 0,
+                    culture_rating: culture_rating || 0,
+                    ratings: JSON.stringify(ratings || {}),
+                    takeaways
+                });
                 const updated = await ScorecardRepository.findByApplicationId(Number(id));
                 return res.json({ message: 'Scorecard updated', scorecards: updated });
             }
@@ -37,8 +42,9 @@ export class ScorecardController {
                 application_id: Number(id),
                 reviewer_id,
                 reviewer_name,
-                skills_rating,
-                culture_rating,
+                skills_rating: skills_rating || 0,
+                culture_rating: culture_rating || 0,
+                ratings: JSON.stringify(ratings || {}),
                 takeaways
             });
 
@@ -95,9 +101,14 @@ export class ScorecardController {
     static async update(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { skills_rating, culture_rating, takeaways } = req.body;
+            const { skills_rating, culture_rating, ratings, takeaways } = req.body;
 
-            await ScorecardRepository.update(Number(id), { skills_rating, culture_rating, takeaways });
+            await ScorecardRepository.update(Number(id), {
+                skills_rating,
+                culture_rating,
+                ratings: ratings ? JSON.stringify(ratings) : undefined,
+                takeaways
+            });
 
             res.json({ message: 'Scorecard updated successfully' });
         } catch (error) {

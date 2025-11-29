@@ -32,6 +32,7 @@ export class JobController {
                 content_blocks: content_blocks ? JSON.stringify(content_blocks) : undefined,
                 application_form_config: application_form_config ? JSON.stringify(application_form_config) : undefined,
                 theme_config: theme_config ? JSON.stringify(theme_config) : undefined,
+                scorecard_config: req.body.scorecard_config ? JSON.stringify(req.body.scorecard_config) : undefined,
                 close_date
             });
 

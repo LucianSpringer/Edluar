@@ -202,10 +202,13 @@ export const JobBlockRenderer: React.FC<JobBlockRendererProps> = ({ blocks, jobs
                             const isDisplay = block.variant === 'display';
                             return (
                                 <div className="text-center px-4">
-                                    <h2 className={`
-                                    ${isDisplay ? 'text-5xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase py-8 md:py-12' : 'text-2xl md:text-3xl font-bold mt-6 md:mt-8 mb-3 md:mb-4'}
-                                    text-edluar-dark dark:text-edluar-cream
-                                `}>
+                                    <h2
+                                        className={`
+                                            ${isDisplay ? 'text-5xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase py-8 md:py-12' : 'text-2xl md:text-3xl font-bold mt-6 md:mt-8 mb-3 md:mb-4'}
+                                            text-edluar-dark dark:text-edluar-cream
+                                        `}
+                                        style={{ fontFamily: block.font }}
+                                    >
                                         {block.value}
                                     </h2>
                                 </div>
@@ -239,7 +242,7 @@ export const JobBlockRenderer: React.FC<JobBlockRendererProps> = ({ blocks, jobs
                         case 'hero':
                             return (
                                 <div className="py-12 md:py-20 text-center px-4">
-                                    <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4 md:mb-6" style={{ color: block.titleColor }}>{block.value}</h1>
+                                    <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4 md:mb-6" style={{ color: block.titleColor, fontFamily: block.font }}>{block.value}</h1>
                                     <p className="text-lg md:text-2xl opacity-70 max-w-3xl mx-auto mb-8 md:mb-10" style={{ color: block.subtitleColor }}>{block.subtitle}</p>
                                     {block.ctaText && (
                                         <a
@@ -330,7 +333,7 @@ export const JobBlockRenderer: React.FC<JobBlockRendererProps> = ({ blocks, jobs
                 if (!content) return null;
 
                 return (
-                    <div key={block.id} style={{ backgroundColor: block.bgColor || 'transparent', color: block.textColor }}>
+                    <div key={block.id} style={{ backgroundColor: block.bgColor || 'transparent', color: block.textColor, fontFamily: block.font }}>
                         {content}
                     </div>
                 );
