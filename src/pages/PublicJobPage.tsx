@@ -166,6 +166,23 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
         </div>
     );
 
+    // Auto-Close Check
+    if (job && job.close_date && new Date() > new Date(job.close_date)) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="text-center max-w-md px-4">
+                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <AlertCircle className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Job Closed</h1>
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Applications for this position are no longer being accepted.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     if (error) return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
             <div className="text-center max-w-md px-4">

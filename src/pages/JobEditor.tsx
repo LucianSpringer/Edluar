@@ -1,45 +1,61 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, Layers, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, ChevronDown, Check, Settings, Calendar } from 'lucide-react';
 import { SITE_TEMPLATES } from '../data/templates';
-import { ContentBuilder, ContentBlock } from '../../components/ContentBuilder';
+import { ContentBuilder } from '../../components/ContentBuilder';
 import { ApplyFormControls, FormConfig } from '../../components/ApplyFormControls';
 import { ApplyFormPreview } from '../../components/ApplyFormPreview';
 import { JobCandidatesView } from '../../components/JobCandidatesView';
 import { JobBlockRenderer } from '../../components/JobBlockRenderer';
+import { Button } from '../../components/Button';
 
 interface JobEditorProps {
     jobId: number;
     onBack: () => void;
-    onNavigate: (page: string, params?: any) => void;
-    initialTab?: 'post' | 'form' | 'candidates' | 'design';
+    // Function to tell parent to switch jobs
+    onSwitchJob: (newId: number) => void;
 }
 
-export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate, initialTab = 'post' }) => {
-    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design'>(initialTab);
+export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob }) => {
+    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design'>('post');
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [closeDate, setCloseDate] = useState(''); // YYYY-MM-DD
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-    // State for Form Config (Lifted from ApplyFormBuilder)
+    // --- JOB SWITCHER STATE ---
+    const [allJobs, setAllJobs] = useState<any[]>([]);
+    const [isJobSwitcherOpen, setIsJobSwitcherOpen] = useState(false);
+    const switcherRef = useRef<HTMLDivElement>(null);
+
+    // Close switcher when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (switcherRef.current && !switcherRef.current.contains(event.target as Node)) {
+                setIsJobSwitcherOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    // Fetch ALL jobs for the switcher
+    useEffect(() => {
+        fetch('http://localhost:5000/api/jobs')
+            .then(res => res.json())
+            .then(data => setAllJobs(data))
+            .catch(err => console.error("Failed to fetch job list", err));
+    }, []);
+    // -------------------------------
+
+    // State for Form Config
     const [formConfig, setFormConfig] = useState<FormConfig>({
-        personalInfo: {
-            name: true,
-            email: true,
-            phone: true,
-            linkedin: true,
-            portfolio: true,
-            education: false,
-            resume: true,
-            coverLetter: true
-        },
+        personalInfo: { name: true, email: true, linkedin: true, education: false, resume: true, coverLetter: true },
         questions: []
     });
 
-    // Theme State (Migrated from CompanyPageEditor)
+    // Theme State
     const [theme, setTheme] = useState({
-        font: 'Inter',
-        primaryColor: '#10B981',
-        bg: '#ffffff',
-        buttonShape: 'rounded-md'
+        font: 'Inter', primaryColor: '#10B981', bg: '#ffffff', buttonShape: 'rounded-md'
     });
 
     const applyTemplate = (templateId: string) => {
@@ -51,7 +67,6 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
                 bg: selected.config.bg,
                 buttonShape: selected.config.buttonShape
             });
-            // Optional: Replace blocks if you want the template content
             if (selected.config.blocks) {
                 // @ts-ignore
                 setJob(prev => ({ ...prev, content_blocks: selected.config.blocks }));
@@ -61,50 +76,31 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
 
     useEffect(() => {
         const fetchJob = async () => {
+            setLoading(true); // Reset loading state on ID change
             try {
                 const res = await fetch(`http://localhost:5000/api/jobs/${jobId}`);
                 const data = await res.json();
 
-                // Parse content_blocks
-                if (data.content_blocks && typeof data.content_blocks === 'string') {
-                    try {
-                        data.content_blocks = JSON.parse(data.content_blocks);
-                    } catch (e) {
-                        data.content_blocks = [];
-                    }
-                }
+                // Parsing logic (Safety Checks)
+                const parseJSON = (str: any, fallback: any) => {
+                    try { return typeof str === 'string' ? JSON.parse(str) : str || fallback; }
+                    catch { return fallback; }
+                };
 
-                // Parse application_form_config
-                if (data.application_form_config && typeof data.application_form_config === 'string') {
-                    try {
-                        const parsedConfig = JSON.parse(data.application_form_config);
-                        setFormConfig(parsedConfig);
-                    } catch (e) {
-                        console.error("Failed to parse form config", e);
-                    }
-                }
-
-                // Parse theme_config
-                if (data.theme_config && typeof data.theme_config === 'string') {
-                    try {
-                        const parsedTheme = JSON.parse(data.theme_config);
-                        setTheme(parsedTheme);
-                    } catch (e) {
-                        console.error("Failed to parse theme config", e);
-                    }
-                } else if (data.theme_config && typeof data.theme_config === 'object') {
-                    setTheme(data.theme_config);
-                }
+                data.content_blocks = parseJSON(data.content_blocks, []);
+                setFormConfig(parseJSON(data.application_form_config, formConfig));
+                setTheme(parseJSON(data.theme_config, theme));
+                setCloseDate(data.close_date ? data.close_date.split('T')[0] : '');
 
                 setJob(data);
-                setLoading(false);
             } catch (err) {
                 console.error("Failed to fetch job", err);
+            } finally {
                 setLoading(false);
             }
         };
         fetchJob();
-    }, [jobId]);
+    }, [jobId]); // Re-run when jobId changes
 
     const handleSave = async () => {
         try {
@@ -114,105 +110,128 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
                 body: JSON.stringify({
                     content_blocks: JSON.stringify(job.content_blocks),
                     application_form_config: JSON.stringify(formConfig),
-                    theme_config: JSON.stringify(theme)
+                    theme_config: JSON.stringify(theme),
+                    close_date: closeDate || null
                 })
             });
-
-            if (res.ok) {
-                alert('Job saved successfully!');
-            }
+            if (res.ok) alert('Job saved successfully!');
         } catch (err) {
             console.error("Failed to save job", err);
         }
     };
 
-    if (loading) return <div className="p-10 text-center">Loading job...</div>;
+    if (loading) return <div className="h-screen flex items-center justify-center bg-white dark:bg-gray-900"><div className="animate-spin w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full"></div></div>;
     if (!job) return <div className="p-10 text-center">Job not found</div>;
 
     return (
         <div className="h-screen flex flex-col bg-white dark:bg-gray-900">
             {/* HEADER */}
-            <div className="h-16 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 bg-white dark:bg-gray-800">
+            <div className="h-16 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-4 bg-white dark:bg-gray-800 relative z-50">
                 <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                    <button onClick={onBack} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
                         <ArrowLeft className="w-5 h-5 text-gray-500" />
                     </button>
-                    <div>
-                        <h1 className="font-bold text-gray-900 dark:text-white">{job.title}</h1>
-                        <span className="text-xs text-gray-500">{job.department} • {job.location}</span>
+
+                    {/* --- JOB SWITCHER DROPDOWN --- */}
+                    <div className="relative" ref={switcherRef}>
+                        <div
+                            onClick={() => setIsJobSwitcherOpen(!isJobSwitcherOpen)}
+                            className="cursor-pointer flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 py-1 px-2 rounded-lg transition-colors"
+                        >
+                            <div>
+                                <h1 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    {job.title}
+                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isJobSwitcherOpen ? 'rotate-180' : ''}`} />
+                                </h1>
+                                <span className="text-xs text-gray-500">{job.department} • {job.location}</span>
+                            </div>
+                        </div>
+
+                        {isJobSwitcherOpen && (
+                            <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                                <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    <div className="text-xs font-bold text-gray-400 uppercase px-3 py-2">Switch Job</div>
+                                    {allJobs.map((j) => (
+                                        <button
+                                            key={j.id}
+                                            onClick={() => {
+                                                onSwitchJob(j.id);
+                                                setIsJobSwitcherOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between group ${j.id === job.id ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200'}`}
+                                        >
+                                            <span className="truncate font-medium">{j.title}</span>
+                                            {j.id === job.id && <Check className="w-4 h-4" />}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="p-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-black/20">
+                                    <button onClick={onBack} className="w-full py-2 text-xs font-bold text-center text-gray-500 hover:text-gray-800 dark:hover:text-white">
+                                        Back to Dashboard
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
+                    {/* ----------------------------- */}
                 </div>
 
                 {/* MODE SWITCHER (TABS) */}
                 <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-                    <button
-                        onClick={() => setActiveTab('post')}
-                        className={`px-4 py-1.5 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'post' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                        <Layout className="w-4 h-4" /> Job Post
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('design')}
-                        className={`px-4 py-1.5 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'design' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                        <Palette className="w-4 h-4" /> Design
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('form')}
-                        className={`px-4 py-1.5 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'form' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                        <FileText className="w-4 h-4" /> Apply Form
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('candidates')}
-                        className={`px-4 py-1.5 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === 'candidates' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                    >
-                        <Users className="w-4 h-4" /> Candidates
-                    </button>
+                    {[
+                        { id: 'post', icon: Layout, label: 'Job Post' },
+                        { id: 'design', icon: Palette, label: 'Design' },
+                        { id: 'form', icon: FileText, label: 'Apply Form' },
+                        { id: 'candidates', icon: Users, label: 'Candidates' }
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id as any)}
+                            className={`px-3 lg:px-4 py-1.5 text-sm font-bold rounded-md flex items-center gap-2 transition-all ${activeTab === tab.id ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                        >
+                            <tab.icon className="w-4 h-4" /> <span className="hidden lg:inline">{tab.label}</span>
+                        </button>
+                    ))}
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <Eye className="w-5 h-5" />
+                    </button>
                     <button
-                        onClick={() => window.open(`${window.location.origin}?mode=public&jobId=${jobId}`, '_blank')}
-                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"
-                        title="Simulate Candidate View (New Tab)"
+                        onClick={() => setIsSettingsOpen(true)}
+                        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
                     >
-                        <ExternalLink className="w-5 h-5" />
-                        <span className="text-xs font-medium hidden sm:inline">Simulate View</span>
+                        <Settings className="w-4 h-4" />
+                        Settings
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-4 py-2 bg-green-600 text-white font-bold text-sm rounded-lg hover:bg-green-700 flex items-center gap-2"
+                        className="px-4 py-2 bg-green-600 text-white font-bold text-sm rounded-lg hover:bg-green-700 flex items-center gap-2 shadow-sm"
                     >
-                        <Save className="w-4 h-4" /> Save Changes
+                        <Save className="w-4 h-4" /> Save
                     </button>
                 </div>
             </div>
 
-            {/* MAIN CONTENT AREA */}
+            {/* ... REST OF YOUR RENDER LOGIC (Sidebar/Content) ... */}
             <div className="flex-1 overflow-hidden">
-
-                {/* CANDIDATES VIEW (Full Screen) */}
                 {activeTab === 'candidates' ? (
                     <JobCandidatesView jobId={jobId} />
                 ) : (
-                    /* EDITOR LAYOUT (Split View) */
                     <div className="h-full flex">
-                        {/* LEFT SIDEBAR: DYNAMIC CONTENT */}
+                        {/* LEFT SIDEBAR */}
                         <div className="w-80 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 h-full overflow-y-auto custom-scrollbar">
-
-                            {/* 1. BLOCKS EDITOR */}
                             {activeTab === 'post' && (
                                 <ContentBuilder
                                     blocks={job.content_blocks || []}
                                     onChange={(newBlocks) => setJob({ ...job, content_blocks: newBlocks })}
                                 />
                             )}
-
-                            {/* 2. DESIGN CONTROLS */}
                             {activeTab === 'design' && (
                                 <div className="p-6 space-y-6 animate-fade-in">
-                                    {/* 0. TEMPLATE PICKER */}
+                                    {/* ... (Your Existing Design Tab Code) ... */}
+                                    {/* Template Picker, Typography, Brand Color, etc. */}
                                     <div className="space-y-4 mb-8 border-b border-gray-200 dark:border-white/10 pb-6">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase">Choose a Template</label>
                                         <div className="grid grid-cols-2 gap-3">
@@ -231,6 +250,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
                                         </div>
                                     </div>
 
+                                    {/* ... rest of design controls from your previous code ... */}
                                     {/* 1. TYPOGRAPHY */}
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-bold text-gray-400 uppercase">Typography</label>
@@ -259,54 +279,14 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
                                             ))}
                                         </div>
                                     </div>
-
-                                    {/* 3. PAGE BACKGROUND */}
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase">Page Background</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <button
-                                                onClick={() => setTheme({ ...theme, bg: '#ffffff' })}
-                                                className={`p-2 text-xs border rounded transition-all ${theme.bg === '#ffffff' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                                            >
-                                                White (Clean)
-                                            </button>
-                                            <button
-                                                onClick={() => setTheme({ ...theme, bg: '#F3F4F6' })}
-                                                className={`p-2 text-xs border rounded transition-all ${theme.bg === '#F3F4F6' ? 'border-green-500 bg-green-50 text-green-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                                            >
-                                                Light Gray (Soft)
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* 4. BUTTON STYLE */}
-                                    <div className="space-y-3">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase">Button Shape</label>
-                                        <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
-                                            {['rounded-md', 'rounded-full', 'rounded-none'].map(shape => (
-                                                <button
-                                                    key={shape}
-                                                    onClick={() => setTheme({ ...theme, buttonShape: shape })}
-                                                    className={`flex-1 py-1.5 text-xs capitalize rounded transition-all ${theme.buttonShape === shape ? 'bg-white dark:bg-gray-600 shadow text-black dark:text-white font-medium' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'}`}
-                                                >
-                                                    {shape.replace('rounded-', '')}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
                                 </div>
                             )}
-
-                            {/* 3. FORM CONTROLS */}
                             {activeTab === 'form' && (
-                                <ApplyFormControls
-                                    config={formConfig}
-                                    onChange={setFormConfig}
-                                />
+                                <ApplyFormControls config={formConfig} onChange={setFormConfig} />
                             )}
                         </div>
 
-                        {/* RIGHT CANVAS: SHARED PREVIEW AREA */}
+                        {/* RIGHT PREVIEW */}
                         <div className="flex-1 bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-y-auto">
                             {activeTab === 'form' ? (
                                 <div className="p-10 w-full flex justify-center">
@@ -322,8 +302,44 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
                         </div>
                     </div>
                 )}
-
             </div>
+
+            {/* Settings Modal */}
+            {isSettingsOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                                <Settings className="w-5 h-5" /> Job Settings
+                            </h3>
+                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">✕</button>
+                        </div>
+                        <div className="p-6 space-y-6">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-green-500" /> Auto-Close Date
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">Automatically close this job and stop accepting applications after this date.</p>
+                                <input
+                                    type="date"
+                                    value={closeDate}
+                                    onChange={(e) => setCloseDate(e.target.value)}
+                                    className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/50 outline-none transition-all dark:text-white"
+                                />
+                            </div>
+
+                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                <p className="text-sm text-blue-800 dark:text-blue-200">
+                                    <strong>Tip:</strong> Setting an auto-close date helps manage candidate expectations and keeps your pipeline fresh.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex justify-end">
+                            <Button variant="primary" onClick={() => setIsSettingsOpen(false)}>Done</Button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

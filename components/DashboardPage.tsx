@@ -634,7 +634,7 @@ const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () =
    };
 
    if (editingJobId) {
-      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onNavigate={onNavigate} />;
+      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onSwitchJob={setEditingJobId} />;
    }
 
    return (
@@ -1676,17 +1676,24 @@ const InboxView = () => {
 
                            return (
                               <div key={activity.id} className={`flex ${isRecruiter ? 'justify-end' : 'justify-start'}`}>
-                                 <div className={`max-w-md ${isRecruiter ? 'bg-edluar-moss text-white' : 'bg-white dark:bg-edluar-surface border border-gray-200 dark:border-white/10'} rounded-2xl p-4 shadow-sm`}>
+                                 <div className={`max-w-md rounded-2xl p-4 shadow-sm
+                                    ${isNote
+                                       ? 'bg-yellow-50 border border-yellow-200 text-gray-800 dark:bg-yellow-900/20 dark:border-yellow-700/30 dark:text-yellow-100' // 🟡 Note Style
+                                       : isRecruiter
+                                          ? 'bg-edluar-moss text-white' // 🟢 Recruiter Email Style
+                                          : 'bg-white dark:bg-edluar-surface border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white' // ⚪ Candidate Email Style
+                                    }`}
+                                 >
                                     {isNote && (
-                                       <div className="flex items-center gap-2 mb-2 text-xs opacity-80">
+                                       <div className="flex items-center gap-2 mb-2 text-xs font-bold opacity-70 uppercase tracking-wider">
                                           <FileText className="w-3 h-3" />
                                           <span>Internal Note</span>
                                        </div>
                                     )}
-                                    <p className={`text-sm ${isRecruiter ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                    <p className="text-sm whitespace-pre-wrap">
                                        {activity.content}
                                     </p>
-                                    <span className={`text-xs mt-2 block ${isRecruiter ? 'text-white/70' : 'text-gray-400'}`}>
+                                    <span className={`text-xs mt-2 block ${isRecruiter && !isNote ? 'text-white/70' : 'text-gray-400'}`}>
                                        {new Date(activity.created_at).toLocaleString()}
                                     </span>
                                  </div>

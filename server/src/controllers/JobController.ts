@@ -9,7 +9,7 @@ export class JobController {
      */
     static async create(req: Request, res: Response) {
         try {
-            const { title, type, department, location, status, content_blocks, application_form_config, theme_config } = req.body;
+            const { title, type, department, location, status, content_blocks, application_form_config, theme_config, close_date } = req.body;
 
             // Basic validation
             if (!title) {
@@ -31,7 +31,8 @@ export class JobController {
                 status: status || 'active',
                 content_blocks: content_blocks ? JSON.stringify(content_blocks) : undefined,
                 application_form_config: application_form_config ? JSON.stringify(application_form_config) : undefined,
-                theme_config: theme_config ? JSON.stringify(theme_config) : undefined
+                theme_config: theme_config ? JSON.stringify(theme_config) : undefined,
+                close_date
             });
 
             res.status(201).json(job);
@@ -89,7 +90,7 @@ export class JobController {
                 return res.status(400).json({ error: 'Invalid job ID' });
             }
 
-            const { title, type, department, location, status, content_blocks, application_form_config, theme_config } = req.body;
+            const { title, type, department, location, status, content_blocks, application_form_config, theme_config, close_date } = req.body;
 
             const job = await JobOpeningRepository.update(id, {
                 title,
@@ -99,7 +100,8 @@ export class JobController {
                 status,
                 content_blocks: content_blocks ? (typeof content_blocks === 'string' ? content_blocks : JSON.stringify(content_blocks)) : undefined,
                 application_form_config: application_form_config ? (typeof application_form_config === 'string' ? application_form_config : JSON.stringify(application_form_config)) : undefined,
-                theme_config: theme_config ? (typeof theme_config === 'string' ? theme_config : JSON.stringify(theme_config)) : undefined
+                theme_config: theme_config ? (typeof theme_config === 'string' ? theme_config : JSON.stringify(theme_config)) : undefined,
+                close_date
             });
 
             res.json(job);

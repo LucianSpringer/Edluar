@@ -1,7 +1,10 @@
-import React from 'react';
-import { X, Clock, Calendar as CalendarIcon, AlignLeft, Type } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Clock, Calendar as CalendarIcon, AlignLeft, Type, FileText, ChevronDown } from 'lucide-react';
 import { EventType } from './types';
 import { format, addMinutes, parse } from 'date-fns';
+import { defaultEventTemplates } from '../../src/data/eventTemplates';
+import { parseTemplate } from '../../src/utils/templateUtils';
+import { useAuth } from '../../context/AuthContext';
 
 interface EventFormProps {
     draftTime: { start: Date; durationMinutes: number };
@@ -22,6 +25,46 @@ export const EventForm: React.FC<EventFormProps> = ({
     onCancel,
     isSaving
 }) => {
+    const { user } = useAuth();
+    const [showTemplates, setShowTemplates] = useState(false);
+
+    const handleTemplateSelect = (templateId: string) => {
+        const template = defaultEventTemplates.find(t => t.id === templateId);
+        if (!template) return;
+
+        // Mock context - in a real app, this would come from the selected candidate/job
+        const context = {
+            recruiter: {
+                name: user?.name || 'Recruiter',
+                email: user?.email || 'recruiter@edluar.com'
+            },
+            candidate: {
+                firstName: 'Sarah', // Mock for demo
+                lastName: 'Candidate'
+            },
+            job: {
+                title: 'Senior Developer' // Mock for demo
+            }
+        };
+
+        const parsedTitle = parseTemplate(template.eventTitle, context);
+        const parsedDescription = parseTemplate(template.description, context);
+
+        onMetaChange({
+            ...draftMeta,
+            title: parsedTitle,
+            type: template.type as EventType,
+            description: parsedDescription
+        });
+
+        onTimeChange({
+            ...draftTime,
+            durationMinutes: template.duration
+        });
+
+        setShowTemplates(false);
+    };
+
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const timeStr = e.target.value;
         if (!timeStr) return;
@@ -50,12 +93,42 @@ export const EventForm: React.FC<EventFormProps> = ({
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {draftMeta.title ? 'Edit Event' : 'New Event'}
                 </h2>
-                <button
-                    onClick={onCancel}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
-                >
-                    <X className="w-5 h-5 text-gray-500" />
-                </button>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowTemplates(!showTemplates)}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        >
+                            <FileText size={16} />
+                            Templates
+                            <ChevronDown size={14} />
+                        </button>
+
+                        {showTemplates && (
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#1A1D1B] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                                <div className="p-2">
+                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">SELECT TEMPLATE</div>
+                                    {defaultEventTemplates.map(template => (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => handleTemplateSelect(template.id)}
+                                            className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm text-gray-700 dark:text-gray-200 transition-colors flex flex-col"
+                                        >
+                                            <span className="font-medium">{template.name}</span>
+                                            <span className="text-xs text-gray-400">{template.duration} min • {template.type}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={onCancel}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg transition-colors"
+                    >
+                        <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">

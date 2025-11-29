@@ -17,6 +17,7 @@ interface JobOpening {
     view_count?: number;
     created_at: string;
     updated_at: string;
+    close_date?: string;
 }
 
 interface CreateJobOpeningData {
@@ -30,6 +31,7 @@ interface CreateJobOpeningData {
     location?: string;
     employmentType?: string;
     status?: string;
+    close_date?: string;
 }
 
 /**
@@ -68,8 +70,8 @@ export class JobOpeningRepository {
      */
     static async create(data: CreateJobOpeningData): Promise<JobOpening> {
         const result = await this.getDB().run(
-            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, department, location, employment_type, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, department, location, employment_type, status, close_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.userId,
                 data.title,
@@ -80,7 +82,8 @@ export class JobOpeningRepository {
                 data.department || null,
                 data.location || null,
                 data.employmentType || 'full-time',
-                data.status || 'active'
+                data.status || 'active',
+                data.close_date || null
             ]
         );
 
@@ -134,6 +137,10 @@ export class JobOpeningRepository {
         if (data.status) {
             updates.push('status = ?');
             values.push(data.status);
+        }
+        if (data.close_date !== undefined) {
+            updates.push('close_date = ?');
+            values.push(data.close_date);
         }
 
         if (updates.length === 0) {

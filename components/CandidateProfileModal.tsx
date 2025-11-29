@@ -110,8 +110,8 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     scheduled_by: currentUserId,
-                    interview_date: data.date,
-                    location: data.location
+                    event_type: 'interview', // Default type, can be overridden if passed in data
+                    ...data
                 })
             });
 

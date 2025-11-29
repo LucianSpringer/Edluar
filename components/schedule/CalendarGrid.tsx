@@ -13,7 +13,7 @@ interface CalendarGridProps {
 
 const HOUR_HEIGHT = 80;
 const START_HOUR = 8;
-const END_HOUR = 20;
+const END_HOUR = 24;
 
 export const CalendarGrid: React.FC<CalendarGridProps> = ({
     currentWeekStart,
@@ -24,7 +24,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
 }) => {
     const weekDays = useMemo(() => {
         const start = startOfWeek(currentWeekStart, { weekStartsOn: 1 });
-        return Array.from({ length: 5 }, (_, i) => addDays(start, i));
+        return Array.from({ length: 7 }, (_, i) => addDays(start, i));
     }, [currentWeekStart]);
 
     const timeSlots = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
@@ -124,7 +124,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
                     const dayEvents = processedEvents.filter(e => format(toLocal(e.start), 'yyyy-MM-dd') === dateKey);
 
                     return (
-                        <div key={day.toISOString()} className="flex-1 min-w-[150px] border-r border-gray-200 dark:border-white/5 relative group">
+                        <div key={day.toISOString()} className="flex-1 min-w-[100px] border-r border-gray-200 dark:border-white/5 relative group">
                             {/* Day Header */}
                             <div className={`h-10 border-b border-gray-200 dark:border-white/5 flex items-center justify-center sticky top-0 bg-white dark:bg-[#0B100D] z-10 ${isToday ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
                                 <div className="text-center">

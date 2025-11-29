@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { User, Bell, Building2, HelpCircle, ChevronLeft } from 'lucide-react';
+import { EventTemplatesTab } from './settings/EventTemplatesTab';
+import { User, Bell, Building2, HelpCircle, ChevronLeft, Calendar } from 'lucide-react';
 import { ProfileSettings } from './settings/ProfileSettings';
 import { AccountSettings } from './settings/AccountSettings';
 import { WorkspaceSettings } from './settings/WorkspaceSettings';
@@ -12,7 +13,7 @@ interface SettingsLayoutProps {
     toggleTheme: () => void;
 }
 
-type SettingsTab = 'profile' | 'account' | 'workspace' | 'support';
+type SettingsTab = 'profile' | 'account' | 'workspace' | 'support' | 'templates';
 
 export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
     onBack,
@@ -26,6 +27,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
         { id: 'profile' as SettingsTab, label: 'My Profile', icon: User },
         { id: 'account' as SettingsTab, label: 'Account Settings', icon: Bell },
         { id: 'workspace' as SettingsTab, label: 'Workspace Admin', icon: Building2 },
+        { id: 'templates' as SettingsTab, label: 'Event Templates', icon: Calendar },
         { id: 'support' as SettingsTab, label: 'Help & Support', icon: HelpCircle },
     ];
 
@@ -66,6 +68,7 @@ export const SettingsLayout: React.FC<SettingsLayoutProps> = ({
                     {activeTab === 'profile' && <ProfileSettings />}
                     {activeTab === 'account' && <AccountSettings isDarkMode={isDarkMode} toggleTheme={toggleTheme} />}
                     {activeTab === 'workspace' && <WorkspaceSettings />}
+                    {activeTab === 'templates' && <EventTemplatesTab />}
                     {activeTab === 'support' && <SupportSettings />}
                 </div>
             </main>

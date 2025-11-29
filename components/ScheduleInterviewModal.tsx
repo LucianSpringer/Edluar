@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, X, CheckCircle2, Clock, AlignLeft, Users, Link as LinkIcon } from 'lucide-react';
+import { Calendar, MapPin, X, CheckCircle2, Clock, AlignLeft, Users, Link as LinkIcon, FileText, ChevronDown } from 'lucide-react';
 import { format, addMinutes } from 'date-fns';
 import { TeamPicker } from './TeamPicker';
+import { defaultEventTemplates } from '../src/data/eventTemplates';
+import { parseTemplate } from '../src/utils/templateUtils';
 
 interface ScheduleInterviewModalProps {
     isOpen: boolean;
@@ -19,8 +21,38 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ 
     const [locationLink, setLocationLink] = useState('');
     const [location, setLocation] = useState(''); // Physical location or general text
     const [attendees, setAttendees] = useState<number[]>([]);
+    const [showTemplates, setShowTemplates] = useState(false);
 
     if (!isOpen) return null;
+
+    const handleTemplateSelect = (templateId: string) => {
+        const template = defaultEventTemplates.find(t => t.id === templateId);
+        if (!template) return;
+
+        // Mock context - in a real app, this would come from auth/job context
+        const context = {
+            candidate: {
+                firstName: candidateName.split(' ')[0],
+                lastName: candidateName.split(' ').slice(1).join(' ') || ''
+            },
+            recruiter: {
+                name: 'Recruiter', // We might need to pass this prop if we want it dynamic
+                email: 'recruiter@edluar.com'
+            },
+            job: {
+                title: 'Role' // We might need to pass this prop
+            }
+        };
+
+        const parsedTitle = parseTemplate(template.eventTitle, context);
+        const parsedDescription = parseTemplate(template.description, context);
+
+        setTitle(parsedTitle);
+        setDuration(template.duration);
+        setLocation(template.location);
+        setDescription(parsedDescription);
+        setShowTemplates(false);
+    };
 
     const handleSubmit = () => {
         if (!date || !time || !location) return;
@@ -34,7 +66,8 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ 
             title,
             description,
             location_link: locationLink,
-            attendees
+            attendees,
+            event_type: 'interview' // Defaulting to interview for now, could be dynamic from template
         });
     };
 
@@ -47,9 +80,40 @@ export const ScheduleInterviewModal: React.FC<ScheduleInterviewModalProps> = ({ 
 
                 {/* Left Side: Form */}
                 <div className="p-8 flex-1 space-y-6 overflow-y-auto custom-scrollbar">
-                    <div>
-                        <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-white">Schedule Interview</h2>
-                        <p className="text-sm text-gray-500">Send an invite to {candidateName}</p>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <h2 className="text-xl font-serif font-bold text-gray-900 dark:text-white">Schedule Interview</h2>
+                            <p className="text-sm text-gray-500">Send an invite to {candidateName}</p>
+                        </div>
+
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowTemplates(!showTemplates)}
+                                className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                            >
+                                <FileText size={16} />
+                                Templates
+                                <ChevronDown size={14} />
+                            </button>
+
+                            {showTemplates && (
+                                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-[#1A1D1B] border border-gray-200 dark:border-white/10 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                                    <div className="p-2">
+                                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">SELECT TEMPLATE</div>
+                                        {defaultEventTemplates.map(template => (
+                                            <button
+                                                key={template.id}
+                                                onClick={() => handleTemplateSelect(template.id)}
+                                                className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-white/5 text-sm text-gray-700 dark:text-gray-200 transition-colors flex flex-col"
+                                            >
+                                                <span className="font-medium">{template.name}</span>
+                                                <span className="text-xs text-gray-400">{template.duration} min • {template.type}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <div className="space-y-5">
