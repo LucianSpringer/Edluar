@@ -5,7 +5,9 @@ export interface FormConfig {
     personalInfo: {
         name: boolean;
         email: boolean;
+        phone: boolean;
         linkedin: boolean;
+        portfolio: boolean;
         education: boolean;
         resume: boolean;
         coverLetter: boolean;

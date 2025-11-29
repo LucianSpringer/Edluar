@@ -703,7 +703,6 @@ const ScrollToTop = () => {
         setIsVisible(false);
       }
     };
-
     window.addEventListener('scroll', toggleVisibility);
     return () => window.removeEventListener('scroll', toggleVisibility);
   }, []);
@@ -735,8 +734,15 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { user, isLoading } = useAuth();
 
-  // PERSISTENCE LOGIC: If user is logged in, force Dashboard
+  // PERSISTENCE LOGIC: If user is logged in, force Dashboard (unless in public mode)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('mode') === 'public') {
+      setPage('public-job');
+      setNavParams({ jobId: params.get('jobId') });
+      return;
+    }
+
     if (!isLoading && user) {
       setPage('dashboard');
     }

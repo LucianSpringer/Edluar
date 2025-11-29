@@ -18,7 +18,7 @@ export const ApplyFormPreview = ({ config }: { config: FormConfig }) => {
                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Personal Information</h3>
 
                     <div className="grid grid-cols-1 gap-4">
-                        {config.personalInfo.name && (
+                        {(config.personalInfo.name || (config.personalInfo as any).fullName) && (
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name <span className="text-red-500">*</span></label>
                                 <div className="relative">
@@ -38,12 +38,32 @@ export const ApplyFormPreview = ({ config }: { config: FormConfig }) => {
                             </div>
                         )}
 
+                        {config.personalInfo.phone && (
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">📞</div>
+                                    <input disabled className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm" placeholder="+1 (555) 000-0000" />
+                                </div>
+                            </div>
+                        )}
+
                         {config.personalInfo.linkedin && (
                             <div className="space-y-1">
                                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">LinkedIn Profile</label>
                                 <div className="relative">
                                     <Linkedin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input disabled className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm" placeholder="linkedin.com/in/johndoe" />
+                                </div>
+                            </div>
+                        )}
+
+                        {config.personalInfo.portfolio && (
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Portfolio URL</label>
+                                <div className="relative">
+                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">🌐</div>
+                                    <input disabled className="w-full pl-9 pr-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm" placeholder="https://myportfolio.com" />
                                 </div>
                             </div>
                         )}

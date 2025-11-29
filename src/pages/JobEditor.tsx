@@ -24,7 +24,9 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
         personalInfo: {
             name: true,
             email: true,
+            phone: true,
             linkedin: true,
+            portfolio: true,
             education: false,
             resume: true,
             coverLetter: true
@@ -171,9 +173,9 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate,
 
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => onNavigate('public-job', { jobId })}
+                        onClick={() => window.open(`${window.location.origin}?mode=public&jobId=${jobId}`, '_blank')}
                         className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"
-                        title="Simulate Candidate View"
+                        title="Simulate Candidate View (New Tab)"
                     >
                         <ExternalLink className="w-5 h-5" />
                         <span className="text-xs font-medium hidden sm:inline">Simulate View</span>

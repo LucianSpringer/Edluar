@@ -13,15 +13,17 @@ export class ApplicationController {
         try {
             const { jobId, email, firstName, lastName, phone, resumeUrl, source, tags } = req.body;
 
-            if (!jobId || !email || !firstName || !lastName) {
-                return res.status(400).json({ error: 'Missing required fields' });
+            console.log('Received application payload:', { jobId, email, firstName, lastName });
+
+            if (!jobId || !email || !firstName) {
+                return res.status(400).json({ error: 'Missing required fields: jobId, email, or firstName' });
             }
 
             // REFINEMENT 1: Candidate Upsert
             // Check if candidate exists by email, create if not
             const candidate = await CandidateRepository.findOrCreateByEmail(email, {
                 firstName,
-                lastName,
+                lastName: lastName || '',
                 phone,
                 resumeUrl,
                 tags

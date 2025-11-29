@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Upload, User, Mail, Linkedin, FileText, GraduationCap, CheckCircle2, AlertCircle } from 'lucide-react';
 import { JobBlockRenderer } from '../../components/JobBlockRenderer';
 import { FormConfig } from '../../components/ApplyFormControls';
@@ -16,11 +16,24 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
 
     // Form State
     const [formData, setFormData] = useState<any>({});
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [resumeName, setResumeName] = useState<string | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setResumeName(file.name);
+            setFormData((prev: any) => ({ ...prev, resumeUrl: `https://storage.edluar.com/resumes/${file.name}` }));
+        }
+    };
     const [formConfig, setFormConfig] = useState<FormConfig>({
         personalInfo: {
             name: true,
             email: true,
+            phone: true,
             linkedin: true,
+            portfolio: true,
             education: false,
             resume: true,
             coverLetter: true
@@ -96,7 +109,7 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
 
         try {
             // Basic validation
-            if (formConfig.personalInfo.name && !formData.firstName) throw new Error("Name is required");
+            if (formConfig.personalInfo.name && !formData.firstName && !formData.fullName) throw new Error("Name is required");
             if (formConfig.personalInfo.email && !formData.email) throw new Error("Email is required");
 
             // Split name if needed
@@ -110,7 +123,7 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
             }
 
             const payload = {
-                jobId,
+                jobId: typeof jobId === 'string' ? parseInt(jobId, 10) : jobId,
                 firstName,
                 lastName,
                 email: formData.email,
@@ -120,6 +133,8 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
                 tags: ['Applied Online'],
                 // Add custom answers if needed by backend
             };
+
+            console.log('Submitting application payload:', payload);
 
             const res = await fetch('http://localhost:5000/api/applications', {
                 method: 'POST',
@@ -216,7 +231,7 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
                                 <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Personal Information</h3>
 
                                 <div className="grid grid-cols-1 gap-5">
-                                    {formConfig.personalInfo.name && (
+                                    {(formConfig.personalInfo.name || (formConfig.personalInfo as any).fullName) && (
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name <span className="text-red-500">*</span></label>
                                             <div className="relative">
@@ -263,15 +278,57 @@ export const PublicJobPage: React.FC<PublicJobPageProps> = ({ jobId }) => {
                                         </div>
                                     )}
 
+                                    {formConfig.personalInfo.phone && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                                            <div className="relative">
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">📞</div>
+                                                <input
+                                                    type="tel"
+                                                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                                    placeholder="+1 (555) 000-0000"
+                                                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {formConfig.personalInfo.portfolio && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Portfolio URL</label>
+                                            <div className="relative">
+                                                <div className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400">🌐</div>
+                                                <input
+                                                    type="url"
+                                                    className="w-full pl-9 pr-3 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all"
+                                                    placeholder="https://myportfolio.com"
+                                                    onChange={(e) => handleInputChange('portfolio', e.target.value)}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {formConfig.personalInfo.resume && (
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Resume / CV <span className="text-red-500">*</span></label>
-                                            <div className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer group">
-                                                <FileText className="w-8 h-8 mb-3 text-gray-300 group-hover:text-green-500 transition-colors" />
-                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Click to upload resume</span>
-                                                <span className="text-xs text-gray-400 mt-1">PDF, DOCX up to 5MB</span>
-                                                {/* Hidden input for now */}
-                                                <input type="hidden" name="resumeUrl" value="https://example.com/resume.pdf" />
+                                            <div
+                                                className="border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-6 flex flex-col items-center justify-center text-gray-400 bg-gray-50/50 dark:bg-gray-900/50 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors cursor-pointer group"
+                                                onClick={() => fileInputRef.current?.click()}
+                                            >
+                                                <FileText className={`w-8 h-8 mb-3 transition-colors ${resumeName ? 'text-green-500' : 'text-gray-300 group-hover:text-green-500'}`} />
+                                                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                                                    {resumeName ? resumeName : "Click to upload resume"}
+                                                </span>
+                                                <span className="text-xs text-gray-400 mt-1">
+                                                    {resumeName ? "Click to change" : "PDF, DOCX up to 5MB"}
+                                                </span>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept=".pdf,.doc,.docx"
+                                                    onChange={handleFileChange}
+                                                />
                                             </div>
                                         </div>
                                     )}
