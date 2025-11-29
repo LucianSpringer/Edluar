@@ -31,7 +31,10 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
     useEffect(() => {
         fetch('http://localhost:5000/api/jobs')
             .then(res => res.json())
-            .then(data => setAllJobs(data))
+            .then(data => {
+                console.log("Job Switcher Data:", data);
+                setAllJobs(data);
+            })
             .catch(err => console.error("Failed to fetch job list", err));
     }, []);
     // -------------------------------
@@ -124,7 +127,10 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                     {/* --- JOB SWITCHER DROPDOWN START --- */}
                     <div className="relative">
                         <div
-                            onClick={() => setIsJobSwitcherOpen(!isJobSwitcherOpen)}
+                            onClick={() => {
+                                console.log("Toggling Switcher");
+                                setIsJobSwitcherOpen(!isJobSwitcherOpen);
+                            }}
                             className="cursor-pointer group"
                         >
                             <h1 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 group-hover:text-green-600 transition-colors">
