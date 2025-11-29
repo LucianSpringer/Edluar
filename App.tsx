@@ -809,11 +809,8 @@ const App: React.FC = () => {
     } else if (target === 'settings') {
       setPage('settings');
       window.scrollTo(0, 0);
-    } else if (target === 'integrations') {
-      setPage('integrations');
-      window.scrollTo(0, 0);
-    } else if (target === 'changelog') {
-      setPage('changelog');
+    } else if (target === 'job-editor') {
+      setPage('job-editor');
       window.scrollTo(0, 0);
     } else {
       setPage('home');
@@ -859,6 +856,19 @@ const App: React.FC = () => {
             initialTab={navParams.tab || 'profile'}
             isDarkMode={isDarkMode}
             toggleTheme={toggleTheme}
+          />
+        </ProtectedRoute>
+      </div>
+    );
+  }
+
+  if (page === 'job-editor') {
+    return (
+      <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
+        <ProtectedRoute>
+          <JobEditorPage
+            onNavigate={handleNavigate}
+            jobId={navParams.jobId}
           />
         </ProtectedRoute>
       </div>
