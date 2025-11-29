@@ -5,10 +5,16 @@ interface JobOpening {
     user_id: number;
     title: string;
     description: string | null;
+    content_blocks: string | null; // JSON string
+    application_form_config: string | null; // JSON string
+    theme_config: string | null; // JSON string
     department: string | null;
     location: string | null;
     employment_type: string;
     status: string;
+    headcount?: number;
+    page_content_json?: string;
+    view_count?: number;
     created_at: string;
     updated_at: string;
 }
@@ -17,6 +23,9 @@ interface CreateJobOpeningData {
     userId: number;
     title: string;
     description?: string;
+    content_blocks?: string; // JSON string
+    application_form_config?: string; // JSON string
+    theme_config?: string; // JSON string
     department?: string;
     location?: string;
     employmentType?: string;
@@ -51,12 +60,15 @@ export class JobOpeningRepository {
      */
     static async create(data: CreateJobOpeningData): Promise<JobOpening> {
         const result = await this.getDB().run(
-            `INSERT INTO job_openings (user_id, title, description, department, location, employment_type, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, department, location, employment_type, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.userId,
                 data.title,
                 data.description || null,
+                data.content_blocks || null,
+                data.application_form_config || null,
+                data.theme_config || null,
                 data.department || null,
                 data.location || null,
                 data.employmentType || 'full-time',
@@ -87,9 +99,37 @@ export class JobOpeningRepository {
             updates.push('description = ?');
             values.push(data.description);
         }
+        if (data.content_blocks !== undefined) {
+            updates.push('content_blocks = ?');
+            values.push(data.content_blocks);
+        }
+        if (data.application_form_config !== undefined) {
+            updates.push('application_form_config = ?');
+            values.push(data.application_form_config);
+        }
+        if (data.theme_config !== undefined) {
+            updates.push('theme_config = ?');
+            values.push(data.theme_config);
+        }
+        if (data.department !== undefined) {
+            updates.push('department = ?');
+            values.push(data.department);
+        }
+        if (data.location !== undefined) {
+            updates.push('location = ?');
+            values.push(data.location);
+        }
+        if (data.employmentType !== undefined) {
+            updates.push('employment_type = ?');
+            values.push(data.employmentType);
+        }
         if (data.status) {
             updates.push('status = ?');
             values.push(data.status);
+        }
+
+        if (updates.length === 0) {
+            return this.findById(id) as Promise<JobOpening>;
         }
 
         updates.push('updated_at = CURRENT_TIMESTAMP');
@@ -109,11 +149,35 @@ export class JobOpeningRepository {
     }
 
     /**
-     * Delete job opening
+     * Delete job opening with cascading delete of dependencies
      */
     static async delete(id: number): Promise<boolean> {
-        const result = await this.getDB().run('DELETE FROM job_openings WHERE id = ?', [id]);
-        return result.changes > 0;
+        const db = this.getDB();
+
+        try {
+            await db.run('BEGIN TRANSACTION');
+
+            // 1. Get all applications for this job
+            const applications = await db.all('SELECT id FROM applications WHERE job_id = ?', [id]);
+
+            // 2. Delete activities for each application
+            for (const app of applications) {
+                await db.run('DELETE FROM activities WHERE application_id = ?', [app.id]);
+            }
+
+            // 3. Delete applications
+            await db.run('DELETE FROM applications WHERE job_id = ?', [id]);
+
+            // 4. Delete the job opening
+            const result = await db.run('DELETE FROM job_openings WHERE id = ?', [id]);
+
+            await db.run('COMMIT');
+            return result.changes > 0;
+        } catch (error) {
+            await db.run('ROLLBACK');
+            console.error('Failed to delete job:', error);
+            throw error;
+        }
     }
 
     /**

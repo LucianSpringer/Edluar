@@ -5,6 +5,11 @@ interface User {
     id: number;
     name: string;
     email: string;
+    role?: string;
+    avatar?: string;
+    phone?: string;
+    job_title?: string;
+    signature?: string;
 }
 
 // AuthContext Type Definition
@@ -14,6 +19,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (token: string, user: User) => void;
     logout: () => void;
+    updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -79,8 +85,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('🚪 User logged out');
     };
 
+    /**
+     * UPDATE USER - Update user data in state
+     */
+    const updateUser = (updatedUser: User) => {
+        setUser(updatedUser);
+        console.log('✅ User data updated:', updatedUser.name);
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, token, isLoading, login, logout, updateUser }}>
             {!isLoading && children}
         </AuthContext.Provider>
     );

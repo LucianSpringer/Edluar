@@ -15,10 +15,12 @@
     "@google/genai": "^1.30.0",
     "@tiptap/react": "^3.11.0",
     "@tiptap/starter-kit": "^3.11.0",
+    "date-fns": "^4.1.0",
     "glob": "^13.0.0",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "sqlite3": "^5.1.7",
     "typhonjs-escomplex": "^0.1.0",
     "zustand": "^5.0.8"
   },

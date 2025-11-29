@@ -20,4 +20,18 @@ export class UserRepository {
     static async updateLoginTimestamp(id: number): Promise<void> {
         await DatabaseManager.getInstance().run('UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [id]);
     }
+
+    static async findAll(): Promise<any[]> {
+        return DatabaseManager.getInstance().all('SELECT id, name, email, role FROM users');
+    }
+
+    static async update(id: number, updateData: any): Promise<void> {
+        const fields = Object.keys(updateData).map(key => `${key} = ?`).join(', ');
+        const values = [...Object.values(updateData), id];
+
+        await DatabaseManager.getInstance().run(
+            `UPDATE users SET ${fields} WHERE id = ?`,
+            values
+        );
+    }
 }

@@ -1,0 +1,6 @@
+﻿Checking Interviews...
+Γ£à Knowledge Graph (SQLite) Initialized
+Found 0 interviews.
+[]
+
+Checking Upcoming Query:

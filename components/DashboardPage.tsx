@@ -48,15 +48,25 @@ import {
    Paperclip,
    Send,
    Linkedin,
+   Pencil,
+   TrendingUp,
    Mail,
    Trash2
 } from 'lucide-react';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { CandidateProfileModal } from './CandidateProfileModal';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
+import { DroppableColumn, DraggableCandidate } from './KanbanHelpers';
+import { JobEditor } from '../src/pages/JobEditor';
+import { SITE_TEMPLATES } from '../src/data/templates';
+import { CreateTodoModal } from './CreateTodoModal';
+import { ScheduleView } from './ScheduleView';
+
+
 
 // --- INBOX INTERFACES
 interface Message {
@@ -107,32 +117,65 @@ const conversations: Conversation[] = [
 const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onClose: () => void; onComplete: (data: any) => void }) => {
    const [step, setStep] = useState(1);
    const [data, setData] = useState({ title: '', type: 'Full-time', department: 'Product', location: 'Remote', strategy: 'post_and_form', template: 'Future Forward' });
+   const [isCreating, setIsCreating] = useState(false);
 
    if (!isOpen) return null;
 
-   const handleNext = () => {
-      if (step < 3) setStep(s => s + 1);
-      else onComplete(data);
+   const handleNext = async () => {
+      if (step < 3) {
+         setStep(s => s + 1);
+      } else {
+         // Final Step: Create Job via API
+         setIsCreating(true);
+         try {
+            // Find selected template config
+            const selectedTemplate = SITE_TEMPLATES.find(t => t.name === data.template) || SITE_TEMPLATES[0];
+
+            const jobPayload = {
+               title: data.title,
+               type: data.type,
+               department: data.department,
+               location: data.location,
+               status: 'active',
+               content_blocks: selectedTemplate.config.blocks,
+               theme_config: selectedTemplate.config,
+               // Initialize empty form config or default
+               application_form_config: {
+                  personalInfo: {
+                     fullName: { enabled: true, required: true },
+                     email: { enabled: true, required: true },
+                     phone: { enabled: true, required: true },
+                     resume: { enabled: true, required: true },
+                     coverLetter: { enabled: true, required: false },
+                     linkedin: { enabled: true, required: false },
+                     portfolio: { enabled: true, required: false }
+                  },
+                  questions: []
+               }
+            };
+
+            const response = await fetch('http://localhost:5000/api/jobs', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify(jobPayload)
+            });
+
+            if (response.ok) {
+               const newJob = await response.json();
+               onComplete(newJob); // Pass full job object back
+            } else {
+               console.error("Failed to create job");
+            }
+         } catch (error) {
+            console.error("Error creating job:", error);
+         } finally {
+            setIsCreating(false);
+         }
+      }
    };
 
-   // TEMPLATE DATA (Based on your images)
-   const visualTemplates = [
-      {
-         name: 'Future Forward',
-         image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=400&q=80',
-         tags: ['Modern', 'Clean']
-      },
-      {
-         name: 'Niche Ceremony',
-         image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80',
-         tags: ['Bold', 'Typography']
-      },
-      {
-         name: 'Dark Matters',
-         image: 'https://images.unsplash.com/photo-1492551557933-34265f7af79e?auto=format&fit=crop&w=400&q=80',
-         tags: ['Sleek', 'Dark Mode']
-      }
-   ];
+   // TEMPLATE DATA
+   const visualTemplates = SITE_TEMPLATES;
 
    return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-edluar-deep/60 backdrop-blur-sm animate-fade-in">
@@ -244,7 +287,7 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
                                  >
                                     {/* Image Container */}
                                     <div className="aspect-[3/4] relative bg-gray-200">
-                                       <img src={tmpl.image} alt={tmpl.name} className="w-full h-full object-cover" />
+                                       <img src={tmpl.thumbnail} alt={tmpl.name} className="w-full h-full object-cover" />
                                        <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-300 ${data.template === tmpl.name ? 'opacity-80' : 'opacity-60 group-hover:opacity-70'}`} />
 
                                        {/* Active Checkmark */}
@@ -257,11 +300,10 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
                                        {/* Content */}
                                        <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                                           <div className="flex gap-2 mb-2">
-                                             {tmpl.tags.map(tag => (
-                                                <span key={tag} className="text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-sm px-2 py-1 rounded">
-                                                   {tag}
-                                                </span>
-                                             ))}
+                                             {/* Add template specific tags if any, or default */}
+                                             <span className="text-[10px] font-bold uppercase tracking-wider bg-white/20 backdrop-blur-sm px-2 py-1 rounded">
+                                                {tmpl.config?.font || 'Modern'}
+                                             </span>
                                           </div>
                                           <h3 className="font-serif font-bold text-xl">{tmpl.name}</h3>
                                        </div>
@@ -291,8 +333,8 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
                ) : (
                   <div></div>
                )}
-               <Button onClick={handleNext} className="shadow-xl px-8 py-3 text-base">
-                  {step === 3 ? "Launch Live Editor" : "Continue"} <ArrowRight className="w-4 h-4 ml-2" />
+               <Button onClick={handleNext} className="shadow-xl px-8 py-3 text-base" disabled={isCreating}>
+                  {isCreating ? 'Creating...' : step === 3 ? "Launch Live Editor" : "Continue"} <ArrowRight className="w-4 h-4 ml-2" />
                </Button>
             </div>
          </div>
@@ -342,6 +384,9 @@ const columns: Column[] = [
 
 // 1. OVERVIEW (Personal Dashboard)
 const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => void }) => {
+   const [todos, setTodos] = React.useState<any[]>([]);
+   const [isTodoModalOpen, setIsTodoModalOpen] = React.useState(false);
+
    const templates = [
       { title: "No template", image: null, color: "bg-edluar-cream" },
       { title: "Future Forward", image: "https://images.unsplash.com/photo-1497366216548-37526070297c", color: "bg-purple-100" },
@@ -353,12 +398,64 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
    const displayName = user?.name || 'Guest User';
    const initials = user?.name ? getInitials(user.name) : 'GU';
 
+   // Fetch todos on mount
+   React.useEffect(() => {
+      fetchTodos();
+   }, []);
+
+   const fetchTodos = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/todos?status=pending');
+         const data = await response.json();
+         setTodos(data.todos || []);
+      } catch (error) {
+         console.error('Failed to fetch todos:', error);
+      }
+   };
+
+   const handleCompleteTodo = async (id: number) => {
+      // Optimistic update
+      setTodos(prev => prev.filter(t => t.id !== id));
+
+      try {
+         await fetch(`http://localhost:5000/api/todos/${id}/complete`, {
+            method: 'PATCH'
+         });
+      } catch (error) {
+         console.error('Failed to complete todo:', error);
+         // Revert on error
+         fetchTodos();
+      }
+   };
+
+   const isPastDue = (dueDate: string) => {
+      if (!dueDate) return false;
+      return new Date(dueDate) < new Date();
+   };
+
+   const formatDate = (dateString: string) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      if (date.toDateString() === today.toDateString()) return 'Today';
+      if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+   };
+
    return (
       <div className="p-8 max-w-7xl mx-auto animate-fade-in-up">
          <header className="flex items-center justify-between mb-12">
             <div className="flex items-center gap-4">
-               <div className="w-16 h-16 rounded-full bg-edluar-moss text-edluar-cream flex items-center justify-center text-2xl font-serif font-bold shadow-lg">
-                  {initials}
+               <div className="w-16 h-16 rounded-full bg-edluar-moss text-edluar-cream flex items-center justify-center text-2xl font-serif font-bold shadow-lg overflow-hidden">
+                  {(user as any)?.avatar ? (
+                     <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                     initials
+                  )}
                </div>
                <div>
                   <h1 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream">Good afternoon, {displayName.split(' ')[0]}</h1>
@@ -375,17 +472,15 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
                         <Plus className="w-5 h-5 text-edluar-moss" /> Start a new job post
                      </button>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
                      {templates.map((t, i) => (
-                        <div key={i} className="group cursor-pointer">
-                           <div className={`aspect-[4/5] rounded-xl mb-3 overflow-hidden border border-edluar-pale dark:border-white/10 shadow-sm group-hover:shadow-md transition-all relative ${t.color}`}>
-                              {t.image ? (
-                                 <img src={t.image} alt={t.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              ) : (
-                                 <div className="w-full h-full flex items-center justify-center"><Plus className="w-8 h-8 text-edluar-dark/20" /></div>
+                        <div key={i} onClick={onOpenCreate} className="cursor-pointer bg-white dark:bg-black/20 border border-edluar-pale/50 dark:border-white/5 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group">
+                           <div className={`h-32 ${t.color} bg-cover bg-center relative`} style={t.image ? { backgroundImage: `url(${t.image})` } : {}}>
+                              {t.image && (
+                                 <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40 group-hover:from-black/30 group-hover:to-black/50 transition-all" />
                               )}
                            </div>
-                           <h3 className="text-sm font-bold text-edluar-dark dark:text-edluar-cream">{t.title}</h3>
+                           <h3 className="p-4 text-sm font-bold text-edluar-dark dark:text-edluar-cream">{t.title}</h3>
                         </div>
                      ))}
                   </div>
@@ -393,29 +488,109 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
             </div>
             <div className="space-y-8">
                <div className="bg-edluar-cream/50 dark:bg-white/5 rounded-2xl p-6 border border-edluar-pale dark:border-white/10">
-                  <h2 className="font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2 mb-6">
-                     <CheckSquare className="w-5 h-5 text-edluar-moss" /> To-do
-                  </h2>
+                  <div className="flex items-center justify-between mb-6">
+                     <h2 className="font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2">
+                        <CheckSquare className="w-5 h-5 text-edluar-moss" /> To-do
+                     </h2>
+                     <button
+                        onClick={() => setIsTodoModalOpen(true)}
+                        className="p-1.5 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors"
+                        title="Add task"
+                     >
+                        <Plus className="w-4 h-4 text-edluar-moss" />
+                     </button>
+                  </div>
                   <div className="space-y-3">
-                     {[{ title: "Review 'Senior Dev' applicants", tag: "Urgent" }, { title: "Draft offer for Sarah", tag: "Pending" }].map((todo, i) => (
-                        <div key={i} className="bg-white dark:bg-black/20 p-3 rounded-xl border border-edluar-pale/50 dark:border-white/5 flex items-start cursor-pointer">
-                           <div className="w-4 h-4 rounded border border-gray-300 mr-3 mt-1" />
-                           <div>
-                              <div className="text-sm font-medium text-edluar-dark dark:text-edluar-cream">{todo.title}</div>
-                              <span className="text-[10px] bg-red-100 text-red-700 px-2 rounded-full">{todo.tag}</span>
-                           </div>
+                     {todos.length === 0 ? (
+                        <div className="text-center py-8 text-edluar-dark/40 dark:text-edluar-cream/40 text-sm">
+                           No pending tasks
                         </div>
-                     ))}
+                     ) : (
+                        todos.map((todo) => (
+                           <div key={todo.id} className="bg-white dark:bg-black/20 p-3 rounded-xl border border-edluar-pale/50 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
+                              <div className="flex items-start gap-3">
+                                 <input
+                                    type="checkbox"
+                                    onChange={() => handleCompleteTodo(todo.id)}
+                                    className="w-4 h-4 rounded border-gray-300 mt-1 cursor-pointer accent-edluar-moss"
+                                 />
+                                 <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium text-edluar-dark dark:text-edluar-cream">
+                                       {todo.task}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                       {todo.candidate_name && (
+                                          <span className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
+                                             → {todo.candidate_name}
+                                          </span>
+                                       )}
+                                       {todo.job_title && (
+                                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                                             {todo.job_title}
+                                          </span>
+                                       )}
+                                       {todo.due_date && (
+                                          <span className={`text-xs ${isPastDue(todo.due_date) ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
+                                             Due: {formatDate(todo.due_date)}
+                                          </span>
+                                       )}
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        ))
+                     )}
                   </div>
                </div>
             </div>
          </div>
+
+         {/* Todo Modal */}
+         <CreateTodoModal
+            isOpen={isTodoModalOpen}
+            onClose={() => setIsTodoModalOpen(false)}
+            onTaskCreated={fetchTodos}
+         />
       </div>
    );
 };
 
 // 2. JOBS LIST VIEW
-const JobsListView = ({ onOpenCreate }: { onOpenCreate: () => void }) => {
+const JobsListView = ({ onOpenCreate, onEdit }: { onOpenCreate: () => void; onEdit: (id: number) => void }) => {
+   const [jobs, setJobs] = useState<any[]>([]);
+
+   useEffect(() => {
+      fetch('http://localhost:5000/api/jobs')
+         .then(res => res.json())
+         .then(data => setJobs(data))
+         .catch(err => console.error("Failed to fetch jobs:", err));
+   }, []);
+
+   // NEW: Track editing state
+   const [editingJobId, setEditingJobId] = useState<number | null>(null);
+
+   const handleDelete = async (id: number) => {
+      if (window.confirm("Are you sure you want to permanently delete this job? This action cannot be undone and will remove all associated applications.")) {
+         try {
+            const response = await fetch(`http://localhost:5000/api/jobs/${id}`, {
+               method: 'DELETE',
+            });
+            if (response.ok) {
+               setJobs(jobs.filter(job => job.id !== id));
+            } else {
+               alert("Failed to delete job");
+            }
+         } catch (error) {
+            console.error("Error deleting job:", error);
+            alert("Error deleting job");
+         }
+      }
+   };
+
+   if (editingJobId) {
+      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} />;
+   }
+
    return (
       <div className="p-8 max-w-7xl mx-auto animate-fade-in">
          <div className="flex justify-between items-center mb-8">
@@ -423,152 +598,297 @@ const JobsListView = ({ onOpenCreate }: { onOpenCreate: () => void }) => {
             <Button variant="primary" size="sm" onClick={onOpenCreate}><Plus className="w-4 h-4 mr-2" /> Create Job</Button>
          </div>
          <div className="grid gap-4">
-            <div className="p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-md transition-all cursor-pointer group">
-               <div className="flex justify-between items-start">
-                  <div>
-                     <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-edluar-moss transition-colors">Senior Product Designer</h3>
-                     <p className="text-sm text-gray-500 mt-1">Remote • Full-time • Design Team</p>
+            {jobs.length === 0 && (
+               <div className="text-center py-12 text-gray-500">
+                  No active jobs found. Start by creating one!
+               </div>
+            )}
+            {jobs.map((job) => (
+               <div
+                  key={job.id}
+                  onClick={() => setEditingJobId(job.id)}
+                  className="p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-md transition-all cursor-pointer group"
+               >
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-edluar-moss transition-colors">{job.title}</h3>
+                        <p className="text-sm text-gray-500 mt-1">{job.location || 'Remote'} • {job.employment_type || 'Full-time'} • {job.department || 'General'}</p>
+                     </div>
+                     <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold capitalize">{job.status}</span>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
-               </div>
-               <div className="mt-4 flex gap-4 text-sm text-gray-500">
-                  <span><strong>12</strong> Candidates</span>
-                  <span><strong>5</strong> Interviews</span>
-                  <span><strong>2</strong> Offers</span>
-               </div>
-            </div>
-            <div className="p-6 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:shadow-md transition-all cursor-pointer group">
-               <div className="flex justify-between items-start">
-                  <div>
-                     <h3 className="font-bold text-lg text-gray-900 dark:text-white group-hover:text-edluar-moss transition-colors">Frontend Engineer</h3>
-                     <p className="text-sm text-gray-500 mt-1">New York • Full-time • Engineering</p>
+                  <div className="mt-4 flex gap-4 text-sm text-gray-500">
+                     <span><strong>0</strong> Candidates</span>
+                     <span><strong>0</strong> Interviews</span>
+                     <span><strong>0</strong> Offers</span>
+                     <div className="ml-auto flex gap-3">
+                        <button
+                           onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingJobId(job.id);
+                           }}
+                           className="flex items-center gap-1 text-gray-500 hover:text-edluar-moss transition-colors"
+                        >
+                           <Pencil className="w-4 h-4" />
+                           <span className="text-xs font-medium">Edit</span>
+                        </button>
+                        <button
+                           onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(job.id);
+                           }}
+                           className="flex items-center gap-1 text-gray-500 hover:text-red-500 transition-colors"
+                        >
+                           <Trash2 className="w-4 h-4" />
+                           <span className="text-xs font-medium">Delete</span>
+                        </button>
+                     </div>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">Active</span>
                </div>
-               <div className="mt-4 flex gap-4 text-sm text-gray-500">
-                  <span><strong>45</strong> Candidates</span>
-                  <span><strong>8</strong> Interviews</span>
-                  <span><strong>0</strong> Offers</span>
-               </div>
-            </div>
+            ))}
          </div>
       </div>
    );
 };
 
-// 3. ATS / PIPELINE (The Candidate Portal)
+
+// 3. ATS / PIPELINE (The Candidate Portal) - WITH REAL DATA & DRAG-AND-DROP
 const ATSView = () => {
-   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+   const { user } = useAuth();
+   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+   const [applications, setApplications] = useState<any>({ applied: [], phone_screen: [], interview: [], offer: [], hired: [] });
+   const [selectedJobId, setSelectedJobId] = useState<number>(2); // Using test job ID
+   const [automationPrompt, setAutomationPrompt] = useState<{ show: boolean; action: string | null; applicationId: number | null }>({ show: false, action: null, applicationId: null });
+   const [activeCandidate, setActiveCandidate] = useState<any | null>(null);
+   const [ratings, setRatings] = useState<Map<number, { average: number; count: number }>>(new Map());
+
+   // Fetch applications when component mounts
+   useEffect(() => {
+      fetchApplications();
+   }, [selectedJobId]);
+
+   const fetchApplications = async () => {
+      try {
+         const response = await fetch(`http://localhost:5000/api/applications/job/${selectedJobId}`);
+         const data = await response.json();
+         setApplications(data);
+
+         // Fetch ratings for all applications
+         fetchRatingsForApplications(data);
+      } catch (error) {
+         console.error("Failed to fetch applications:", error);
+      }
+   };
+
+   const fetchRatingsForApplications = async (apps: any) => {
+      const allApps = Object.values(apps).flat() as any[];
+      const ratingsMap = new Map<number, { average: number; count: number }>();
+
+      await Promise.all(
+         allApps.map(async (app) => {
+            try {
+               const response = await fetch(`http://localhost:5000/api/applications/${app.id}/reviews/average`);
+               const stats = await response.json();
+               ratingsMap.set(app.id, stats);
+            } catch (error) {
+               console.error(`Failed to fetch rating for application ${app.id}:`, error);
+            }
+         })
+      );
+
+      setRatings(ratingsMap);
+   };
+
+   const handleQuickAdvance = async (applicationId: number, currentStage: string) => {
+      const stages = ['applied', 'phone_screen', 'interview', 'offer', 'hired'];
+      const currentIndex = stages.indexOf(currentStage);
+
+      if (currentIndex < stages.length - 1) {
+         const nextStage = stages[currentIndex + 1];
+         await handleStageUpdate(applicationId, nextStage);
+      }
+   };
+
+   const handleStageUpdate = async (applicationId: number, newStage: string) => {
+      try {
+         const response = await fetch(`http://localhost:5000/api/applications/${applicationId}/stage`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newStage })
+         });
+
+         const result = await response.json();
+
+         // Show automation prompt if suggested
+         if (result.suggestAction) {
+            setAutomationPrompt({ show: true, action: result.suggestAction, applicationId });
+         }
+
+         // Refresh data
+         await fetchApplications();
+      } catch (error) {
+         console.error("Failed to update stage:", error);
+      }
+   };
+
+   const columns = [
+      { id: 'applied', title: 'New Applied', color: 'bg-blue-500', data: applications.applied },
+      { id: 'phone_screen', title: 'Phone Screen', color: 'bg-purple-500', data: applications.phone_screen },
+      { id: 'interview', title: 'Interviewing', color: 'bg-yellow-500', data: applications.interview },
+      { id: 'offer', title: 'Offer Sent', color: 'bg-green-500', data: applications.offer },
+      { id: 'hired', title: 'Hired', color: 'bg-edluar-moss', data: applications.hired },
+   ];
+
+   // Helper: Find which stage an application belongs to
+   const findStageOfItem = (id: string | number): string | undefined => {
+      for (const column of columns) {
+         if (column.data.find((app: any) => app.id.toString() === id.toString())) {
+            return column.id;
+         }
+      }
+      return undefined;
+   };
+
+   // DnD Sensors
+   const sensors = useSensors(
+      useSensor(PointerSensor, {
+         activationConstraint: {
+            distance: 8, // 8px of movement required before drag starts
+         },
+      }),
+      useSensor(KeyboardSensor, {
+         coordinateGetter: sortableKeyboardCoordinates,
+      })
+   );
+
+   const handleDragStart = (event: any) => {
+      const candidate = Object.values(applications)
+         .flat()
+         .find((app: any) => app.id.toString() === event.active.id.toString());
+      setActiveCandidate(candidate || null);
+   };
+
+   const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (!over) {
+         setActiveCandidate(null);
+         return;
+      }
+
+      const activeId = active.id.toString();
+      const overId = over.id.toString();
+      const activeStage = findStageOfItem(activeId);
+
+      // The drop target ID is either the column's ID or we find it from the card
+      const overStage = columns.find(col => col.id === overId)
+         ? overId
+         : findStageOfItem(overId);
+
+      // Cross-column movement (Stage Transition)
+      if (activeStage && overStage && activeStage !== overStage) {
+         // Optimistic UI Update
+         const updatedApplications = { ...applications };
+         const sourceArray = updatedApplications[activeStage as keyof typeof applications];
+         const appIndex = sourceArray.findIndex((app: any) => app.id.toString() === activeId);
+
+         if (appIndex !== -1) {
+            const [movedApp] = sourceArray.splice(appIndex, 1);
+            movedApp.status = overStage;
+            updatedApplications[overStage as keyof typeof applications].push(movedApp);
+            setApplications(updatedApplications);
+
+            // API Call
+            handleStageUpdate(parseInt(activeId), overStage);
+         }
+      }
+
+      setActiveCandidate(null);
+   };
 
    return (
-      <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0B100D] animate-fade-in relative">
-         <div className="h-16 bg-white dark:bg-edluar-deep border-b border-gray-200 dark:border-white/5 px-6 flex items-center justify-between flex-shrink-0">
-            <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Senior Product Designer <ChevronDown className="w-4 h-4" /></h1>
-            <div className="flex gap-2">
-               <Button variant="primary" size="sm"><Plus className="w-4 h-4 mr-2" /> Add Candidate</Button>
-            </div>
-         </div>
-         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
-            <div className="flex h-full gap-6 min-w-max">
-               {columns.map(col => (
-                  <div key={col.id} className="w-72 flex flex-col h-full">
-                     <div className="flex items-center justify-between mb-4 px-1">
-                        <span className="font-bold text-gray-700 dark:text-gray-200 text-sm flex items-center gap-2">
-                           <span className={`w-2 h-2 rounded-full ${col.color}`}></span> {col.title}
-                        </span>
-                        <span className="text-xs text-gray-400 font-medium">{col.count}</span>
-                     </div>
-                     <div className="flex-1 bg-gray-100/50 dark:bg-white/[0.02] rounded-xl p-2 space-y-3 overflow-y-auto custom-scrollbar border border-dashed border-gray-200 dark:border-white/5">
-                        {candidates.filter(c => c.stage === col.id).map(candidate => (
-                           <div
-                              key={candidate.id}
-                              onClick={() => setSelectedCandidate(candidate)}
-                              className="bg-white dark:bg-edluar-surface p-4 rounded-xl shadow-sm border border-gray-100 dark:border-white/5 hover:shadow-md cursor-pointer transition-all hover:-translate-y-1"
-                           >
-                              <div className="flex items-center gap-3 mb-3">
-                                 <img src={candidate.avatar} alt={candidate.name} className="w-8 h-8 rounded-full" />
-                                 <div>
-                                    <h4 className="font-bold text-gray-900 dark:text-white text-sm">{candidate.name}</h4>
-                                    <p className="text-xs text-gray-500">{candidate.role}</p>
-                                 </div>
-                              </div>
-                              <div className="flex gap-1">{candidate.tags.map(t => <span key={t} className="px-2 py-0.5 bg-gray-50 dark:bg-white/5 text-[10px] rounded">{t}</span>)}</div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-               ))}
-            </div>
-         </div>
-
-         {/* Candidate Portal Modal */}
-         {selectedCandidate && (
-            <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex justify-end">
-               <div className="w-full max-w-2xl bg-white dark:bg-edluar-surface h-full shadow-2xl flex flex-col animate-slide-in-right">
-                  <div className="p-6 border-b border-gray-200 dark:border-white/10 flex items-center justify-between">
-                     <div className="flex items-center gap-4">
-                        <img src={selectedCandidate.avatar} className="w-16 h-16 rounded-full border-2 border-white shadow" />
-                        <div>
-                           <h2 className="text-2xl font-serif font-bold text-gray-900 dark:text-white">{selectedCandidate.name}</h2>
-                           <p className="text-gray-500">{selectedCandidate.role}</p>
-                        </div>
-                     </div>
-                     <button onClick={() => setSelectedCandidate(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full"><X className="w-5 h-5" /></button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-8">
-                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl">
-                           <span className="text-xs font-bold uppercase text-gray-400">Contact</span>
-                           <div className="mt-2 space-y-1">
-                              <p className="text-sm font-medium">{selectedCandidate.email}</p>
-                              <p className="text-sm text-gray-500">{selectedCandidate.phone}</p>
-                           </div>
-                        </div>
-                        <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl">
-                           <span className="text-xs font-bold uppercase text-gray-400">Application</span>
-                           <div className="mt-2 space-y-1">
-                              <p className="text-sm font-medium">Applied: {selectedCandidate.appliedDate}</p>
-                              <p className="text-sm text-gray-500">Source: LinkedIn</p>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div>
-                        <h3 className="font-bold text-lg mb-4 border-b pb-2">Application Questions</h3>
-                        <div className="space-y-4">
-                           <div>
-                              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Why do you want to work here?</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">I've been following Edluar's growth and I love the mission of making hiring more human. My background in React aligns perfectly with your tech stack.</p>
-                           </div>
-                           <div>
-                              <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Link to Portfolio</p>
-                              <a href="#" className="text-sm text-blue-500 hover:underline">dribbble.com/liamchen</a>
-                           </div>
-                        </div>
-                     </div>
-
-                     <div>
-                        <h3 className="font-bold text-lg mb-4 border-b pb-2">Scorecard</h3>
-                        <div className="flex gap-2">
-                           <div className="flex-1 p-3 border rounded-lg text-center">
-                              <span className="block text-xs text-gray-400 uppercase">Technical</span>
-                              <span className="block text-xl font-bold text-green-600">4.5</span>
-                           </div>
-                           <div className="flex-1 p-3 border rounded-lg text-center">
-                              <span className="block text-xs text-gray-400 uppercase">Culture</span>
-                              <span className="block text-xl font-bold text-blue-600">5.0</span>
-                           </div>
-                        </div>
-                     </div>
-                  </div>
-                  <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-black/20 flex justify-end gap-3">
-                     <Button variant="outline" size="sm">Reject</Button>
-                     <Button variant="primary" size="sm">Move to Offer</Button>
-                  </div>
+      <DndContext
+         sensors={sensors}
+         collisionDetection={closestCenter}
+         onDragStart={handleDragStart}
+         onDragEnd={handleDragEnd}
+      >
+         <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0B100D] animate-fade-in relative">
+            <div className="h-16 bg-white dark:bg-edluar-deep border-b border-gray-200 dark:border-white/5 px-6 flex items-center justify-between flex-shrink-0">
+               <h1 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">Senior Product Designer <ChevronDown className="w-4 h-4" /></h1>
+               <div className="flex gap-2">
+                  <Button variant="primary" size="sm"><Plus className="w-4 h-4 mr-2" /> Add Candidate</Button>
                </div>
             </div>
-         )}
-      </div>
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
+               <div className="flex h-full gap-6 min-w-max">
+                  {columns.map(col => (
+                     <DroppableColumn key={col.id} id={col.id} title={col.title} color={col.color} count={col.data.length}>
+                        <SortableContext items={col.data.map((app: any) => app.id.toString())} strategy={verticalListSortingStrategy}>
+                           {col.data.map((app: any) => (
+                              <DraggableCandidate
+                                 key={app.id}
+                                 id={app.id}
+                                 application={app}
+                                 onClick={() => setSelectedApplication(app)}
+                                 rating={ratings.get(app.id)}
+                                 onQuickAdvance={col.id !== 'hired' ? () => handleQuickAdvance(app.id, col.id) : undefined}
+                              />
+                           ))}
+                        </SortableContext>
+                     </DroppableColumn>
+                  ))}
+               </div>
+            </div>
+
+            {/* DragOverlay for visual feedback */}
+            <DragOverlay>
+               {activeCandidate ? (
+                  <div className="bg-white dark:bg-edluar-surface p-4 rounded-xl shadow-2xl border-2 border-edluar-moss opacity-90 rotate-3">
+                     <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
+                           {activeCandidate.first_name?.[0]}{activeCandidate.last_name?.[0]}
+                        </div>
+                        <h4 className="font-bold text-gray-900 dark:text-white text-sm">
+                           {activeCandidate.first_name} {activeCandidate.last_name}
+                        </h4>
+                     </div>
+                  </div>
+               ) : null}
+            </DragOverlay>
+
+            {/* Automation Prompt Modal */}
+            {automationPrompt.show && (
+               <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                  <div className="bg-white dark:bg-edluar-surface p-6 rounded-xl shadow-2xl max-w-md">
+                     <h3 className="text-lg font-bold mb-2">Next Step?</h3>
+                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        {automationPrompt.action === 'OPEN_INBOX' && 'Candidate moved to Phone Screen. Would you like to send them a message?'}
+                        {automationPrompt.action === 'OPEN_SCHEDULER_MODAL' && 'Candidate moved to Interview. Would you like to schedule an interview?'}
+                        {automationPrompt.action === 'JOB_CLOSED' && 'Headcount reached! This job has been automatically closed.'}
+                     </p>
+                     <div className="flex gap-2 justify-end">
+                        <Button variant="outline" size="sm" onClick={() => setAutomationPrompt({ show: false, action: null, applicationId: null })}>Later</Button>
+                        <Button variant="primary" size="sm" onClick={() => {
+                           setAutomationPrompt({ show: false, action: null, applicationId: null });
+                           // TODO: Open appropriate view based on action
+                        }}>
+                           {automationPrompt.action === 'JOB_CLOSED' ? 'Got it' : 'Yes'}
+                        </Button>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            {/* Enhanced Candidate Profile Modal */}
+            {selectedApplication && (
+               <CandidateProfileModal
+                  application={selectedApplication}
+                  onClose={() => setSelectedApplication(null)}
+                  currentUserId={user?.id || 1}
+               />
+            )}
+         </div>
+      </DndContext>
    );
 };
 
@@ -594,7 +914,31 @@ function SortableBlock({ id, children }: { id: string; children: (args: { listen
 }
 
 // --- 2. CAREER SITE BUILDER (The "No-Code" Engine) ---
-const CareerSiteView = ({ initialData }: { initialData?: any }) => {
+const CareerSiteView = ({ initialData, pendingJobData, onPublish }: { initialData?: any; pendingJobData?: any; onPublish?: () => void }) => {
+   const [isPublishing, setIsPublishing] = useState(false);
+
+   const handlePublish = async () => {
+      if (!pendingJobData || !onPublish) return;
+
+      setIsPublishing(true);
+      try {
+         const response = await fetch('http://localhost:5000/api/jobs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(pendingJobData)
+         });
+
+         if (response.ok) {
+            onPublish();
+         } else {
+            console.error("Failed to publish job");
+         }
+      } catch (error) {
+         console.error("Error publishing job:", error);
+      } finally {
+         setIsPublishing(false);
+      }
+   };
    const [activeTab, setActiveTab] = useState<'editor' | 'design'>('editor');
 
    const [config, setConfig] = useState({
@@ -1059,7 +1403,11 @@ const CareerSiteView = ({ initialData }: { initialData?: any }) => {
                   </div>
                )}
             </div>
-            <div className="p-4 border-t border-gray-200 dark:border-white/5"><Button className="w-full justify-center">Publish</Button></div>
+            <div className="p-4 border-t border-gray-200 dark:border-white/5">
+               <Button className="w-full justify-center" onClick={handlePublish} disabled={isPublishing}>
+                  {isPublishing ? 'Publishing...' : 'Publish'}
+               </Button>
+            </div>
          </div>
 
          {/* Live Preview */}
@@ -1085,28 +1433,90 @@ const CareerSiteView = ({ initialData }: { initialData?: any }) => {
    );
 };
 
-// 4. INBOX VIEW (Video-Aligned Redesign)
+// 4. INBOX VIEW - WITH REAL ACTIVITIES DATA
 const InboxView = () => {
-   const [activeChat, setActiveChat] = useState<Conversation>(conversations[0]);
-   const [inputMode, setInputMode] = useState<'email' | 'note'>('email'); // NEW: Toggle State
+   const [applications, setApplications] = useState<any[]>([]);
+   const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
+   const [activities, setActivities] = useState<any[]>([]);
+   const [inputMode, setInputMode] = useState<'email' | 'note'>('email');
    const [newMessage, setNewMessage] = useState("");
+   const [loading, setLoading] = useState(true);
 
-   const handleSend = () => {
-      if (!newMessage.trim()) return;
-      // Mock Send Logic
-      const msg: Message = {
-         id: Date.now(),
-         type: inputMode,
-         sender: 'recruiter',
-         text: newMessage,
-         timestamp: 'Just now',
-         isRead: true,
-         authorName: inputMode === 'note' ? "Alex (You)" : undefined
-      };
-      const updatedChat = { ...activeChat, messages: [...activeChat.messages, msg] };
-      setActiveChat(updatedChat);
-      setNewMessage("");
+   // Fetch all applications and their activities
+   useEffect(() => {
+      fetchApplicationsWithActivities();
+   }, []);
+
+   const fetchApplicationsWithActivities = async () => {
+      try {
+         setLoading(true);
+         // Fetch applications from all jobs (simplified - in production, filter by user/team)
+         const response = await fetch('http://localhost:5000/api/applications/job/2'); // Using test job
+         const data = await response.json();
+
+         // Flatten all applications from all stages
+         const allApps = Object.values(data).flat();
+         setApplications(allApps);
+
+         // Select first application by default
+         if (allApps.length > 0) {
+            await selectApplication(allApps[0]);
+         }
+
+         setLoading(false);
+      } catch (error) {
+         console.error("Failed to fetch applications:", error);
+         setLoading(false);
+      }
    };
+
+   const selectApplication = async (app: any) => {
+      setSelectedApplication(app);
+
+      // Fetch activities for this application (communications only)
+      try {
+         const response = await fetch(`http://localhost:5000/api/applications/${app.id}/activities?communications=true`);
+         const data = await response.json();
+         setActivities(data);
+      } catch (error) {
+         console.error("Failed to fetch activities:", error);
+      }
+   };
+
+   const handleSend = async () => {
+      if (!newMessage.trim() || !selectedApplication) return;
+
+      try {
+         // Create new activity
+         const response = await fetch(`http://localhost:5000/api/applications/${selectedApplication.id}/activities`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+               type: inputMode,
+               content: newMessage
+            })
+         });
+
+         if (response.ok) {
+            // Refresh activities
+            await selectApplication(selectedApplication);
+            setNewMessage("");
+         }
+      } catch (error) {
+         console.error("Failed to send message:", error);
+      }
+   };
+
+   if (loading) {
+      return (
+         <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+               <div className="animate-spin w-8 h-8 border-4 border-edluar-moss border-t-transparent rounded-full mx-auto mb-4"></div>
+               <p className="text-gray-500">Loading inbox...</p>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="flex h-full bg-white dark:bg-edluar-deep animate-fade-in overflow-hidden">
@@ -1124,509 +1534,380 @@ const InboxView = () => {
                </div>
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar">
-               {conversations.map((chat) => (
-                  <div
-                     key={chat.candidateId}
-                     onClick={() => setActiveChat(chat)}
-                     className={`p-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-all ${activeChat.candidateId === chat.candidateId ? 'bg-blue-50 dark:bg-white/10 border-l-4 border-l-edluar-moss' : 'border-l-4 border-l-transparent'}`}
-                  >
-                     <div className="flex justify-between items-start mb-1">
-                        <div className="flex items-center gap-2">
-                           <div className="relative">
-                              <img src={chat.candidateAvatar} className="w-10 h-10 rounded-full object-cover" />
-                              {chat.unreadCount > 0 && <span className="absolute -top-1 -right-1 w-3 h-3 bg-edluar-moss border-2 border-white rounded-full"></span>}
-                           </div>
-                           <div>
-                              <span className="font-bold text-sm text-gray-900 dark:text-white block">{chat.candidateName}</span>
-                              <span className="text-xs text-gray-500">{chat.role}</span>
-                           </div>
-                        </div>
-                        <span className="text-[10px] text-gray-400">{chat.lastMessageTime}</span>
-                     </div>
-                     <p className="text-xs text-gray-500 truncate mt-2 pl-12">{chat.lastMessage}</p>
+               {applications.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400">
+                     <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                     <p className="text-sm">No conversations yet</p>
                   </div>
-               ))}
-            </div>
-         </div>
-
-         {/* 2. CENTER RAIL: Communication Stream */}
-         <div className="flex-1 flex flex-col bg-gray-50 dark:bg-[#0B100D] min-w-0">
-            {/* Header */}
-            <div className="h-16 bg-white dark:bg-edluar-surface border-b border-gray-200 dark:border-white/10 flex items-center justify-between px-6 flex-shrink-0">
-               <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{activeChat.candidateName}</h3>
-                  <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold border border-yellow-200">
-                     {activeChat.stage}
-                  </span>
-               </div>
-               <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="hidden sm:flex"><CheckCircle2 className="w-4 h-4 mr-2" /> Move to Offer</Button>
-                  <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"><MoreHorizontal className="w-5 h-5" /></button>
-               </div>
-            </div>
-
-            {/* Stream */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-6 custom-scrollbar">
-               {activeChat.messages.map((msg) => {
-                  // SYSTEM EVENT (Center)
-                  if (msg.type === 'event') {
-                     return (
-                        <div key={msg.id} className="flex justify-center">
-                           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-100 dark:bg-white/10 px-3 py-1 rounded-full">
-                              {msg.text} • {msg.timestamp}
-                           </span>
-                        </div>
-                     );
-                  }
-
-                  // INTERNAL NOTE (Yellow Bubble)
-                  if (msg.type === 'note') {
-                     return (
-                        <div key={msg.id} className="flex justify-end px-8">
-                           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-900/30 p-4 rounded-xl max-w-lg w-full relative group">
-                              <div className="flex items-center gap-2 mb-2 border-b border-yellow-200/50 pb-2">
-                                 <div className="w-4 h-4 bg-yellow-400 rounded-full flex items-center justify-center text-[10px] text-white font-bold">N</div>
-                                 <span className="text-xs font-bold text-yellow-700 dark:text-yellow-500">Internal Note from {msg.authorName}</span>
-                                 <span className="text-[10px] text-yellow-600/60 ml-auto">{msg.timestamp}</span>
-                              </div>
-                              <p className="text-sm text-yellow-800 dark:text-yellow-200 leading-relaxed">{msg.text}</p>
-                           </div>
-                        </div>
-                     );
-                  }
-
-                  // STANDARD EMAIL (Left/Right)
-                  return (
-                     <div key={msg.id} className={`flex ${msg.sender === 'recruiter' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`flex max-w-lg ${msg.sender === 'recruiter' ? 'flex-row-reverse' : 'flex-row'} gap-3`}>
-                           {/* Avatar only for candidate messages to reduce noise on sender side */}
-                           {msg.sender === 'candidate' && <img src={activeChat.candidateAvatar} className="w-8 h-8 rounded-full self-end" />}
-
-                           <div className={`p-4 rounded-2xl shadow-sm ${msg.sender === 'recruiter'
-                              ? 'bg-white dark:bg-edluar-moss text-gray-900 dark:text-white rounded-tr-none border border-gray-200 dark:border-edluar-moss'
-                              : 'bg-white dark:bg-white/10 text-gray-800 dark:text-gray-200 rounded-tl-none border border-gray-100 dark:border-white/5'
-                              }`}>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.text}</p>
-                              <div className={`text-[10px] mt-2 text-right ${msg.sender === 'recruiter' ? 'text-gray-400 dark:text-white/60' : 'text-gray-400'}`}>
-                                 {msg.timestamp} {msg.isRead && msg.sender === 'recruiter' && '• Read'}
-                              </div>
-                           </div>
-                        </div>
-                     </div>
-                  );
-               })}
-            </div>
-
-            {/* Input Area (The "Tabbed" Interface from Video) */}
-            <div className="bg-white dark:bg-edluar-surface border-t border-gray-200 dark:border-white/10 p-4">
-               {/* Input Tabs */}
-               <div className="flex gap-1 mb-0 ml-2">
-                  <button
-                     onClick={() => setInputMode('email')}
-                     className={`px-4 py-2 text-xs font-bold rounded-t-lg border-t border-x transition-all ${inputMode === 'email' ? 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10 text-edluar-dark dark:text-white relative top-[1px] z-10' : 'bg-gray-50 dark:bg-black/20 border-transparent text-gray-500'}`}
-                  >
-                     <Mail className="w-3 h-3 inline mr-2" /> Email
-                  </button>
-                  <button
-                     onClick={() => setInputMode('note')}
-                     className={`px-4 py-2 text-xs font-bold rounded-t-lg border-t border-x transition-all ${inputMode === 'note' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-100 dark:border-yellow-900/30 text-yellow-700 dark:text-yellow-500 relative top-[1px] z-10' : 'bg-gray-50 dark:bg-black/20 border-transparent text-gray-500'}`}
-                  >
-                     <FileText className="w-3 h-3 inline mr-2" /> Internal Note
-                  </button>
-               </div>
-
-               {/* Input Box */}
-               <div className={`rounded-xl rounded-tl-none border p-2 transition-colors ${inputMode === 'note' ? 'bg-yellow-50/50 border-yellow-200 dark:bg-yellow-900/10 dark:border-yellow-900/30' : 'bg-white dark:bg-white/5 border-gray-200 dark:border-white/10'}`}>
-                  <textarea
-                     className="w-full bg-transparent border-none focus:ring-0 resize-none max-h-48 min-h-[80px] p-3 text-sm text-gray-900 dark:text-white placeholder-gray-400"
-                     placeholder={inputMode === 'email' ? "Write a reply to Liam..." : "Leave a private note for the team..."}
-                     value={newMessage}
-                     onChange={(e) => setNewMessage(e.target.value)}
-                  />
-                  <div className="flex justify-between items-center px-2 pb-2 mt-2">
-                     <div className="flex gap-2">
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded hover:bg-gray-100 dark:hover:bg-white/10"><Paperclip className="w-4 h-4" /></button>
-                        <button className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded hover:bg-gray-100 dark:hover:bg-white/10"><Layout className="w-4 h-4" /></button> {/* Templates */}
-                     </div>
-                     <button
-                        onClick={handleSend}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white transition-all shadow-md ${inputMode === 'note' ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-edluar-moss hover:bg-edluar-dark'}`}
+               ) : (
+                  applications.map((app: any) => (
+                     <div
+                        key={app.id}
+                        onClick={() => selectApplication(app)}
+                        className={`p-4 border-b border-gray-100 dark:border-white/5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/5 transition-all ${selectedApplication?.id === app.id ? 'bg-blue-50 dark:bg-white/10 border-l-4 border-l-edluar-moss' : 'border-l-4 border-l-transparent'}`}
                      >
-                        {inputMode === 'email' ? 'Send Email' : 'Save Note'} <Send className="w-3 h-3" />
-                     </button>
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         {/* 3. RIGHT RAIL: Context (Video Style) */}
-         <div className="w-72 bg-white dark:bg-edluar-surface border-l border-gray-200 dark:border-white/10 hidden xl:flex flex-col overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 dark:border-white/10 text-center">
-               <img src={activeChat.candidateAvatar} className="w-20 h-20 rounded-full mx-auto mb-3 border-4 border-gray-50 dark:border-white/5" />
-               <h2 className="font-bold text-lg text-gray-900 dark:text-white">{activeChat.candidateName}</h2>
-               <p className="text-sm text-gray-500 mb-4">{activeChat.role}</p>
-               <div className="flex justify-center gap-2">
-                  <a href="#" className="p-2 bg-gray-100 dark:bg-white/10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-500 transition-colors"><Linkedin className="w-4 h-4" /></a>
-                  <a href="#" className="p-2 bg-gray-100 dark:bg-white/10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200"><Globe className="w-4 h-4" /></a>
-               </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-               <div>
-                  <h4 className="text-xs font-bold uppercase text-gray-400 mb-3 tracking-wider">Details</h4>
-                  <div className="space-y-3">
-                     <div className="flex items-center gap-3 text-sm">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300 truncate">liam.chen@example.com</span>
-                     </div>
-                     <div className="flex items-center gap-3 text-sm">
-                        <MapPin className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">San Francisco, CA</span>
-                     </div>
-                     <div className="flex items-center gap-3 text-sm">
-                        <Briefcase className="w-4 h-4 text-gray-400" />
-                        <span className="text-gray-700 dark:text-gray-300">5 Years Exp.</span>
-                     </div>
-                  </div>
-               </div>
-
-               <div>
-                  <h4 className="text-xs font-bold uppercase text-gray-400 mb-3 tracking-wider">Attachments</h4>
-                  <div className="p-3 border border-gray-200 dark:border-white/10 rounded-lg flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors">
-                     <div className="w-8 h-8 bg-red-100 text-red-500 rounded flex items-center justify-center"><FileText className="w-4 h-4" /></div>
-                     <div className="overflow-hidden">
-                        <p className="text-sm font-bold text-gray-900 dark:text-white truncate">Liam_Resume_2024.pdf</p>
-                        <p className="text-[10px] text-gray-500">2.4 MB • Added 2d ago</p>
-                     </div>
-                  </div>
-               </div>
-            </div>
-         </div>
-      </div>
-   );
-}
-
-// 4. SCHEDULE VIEW (Calendar & Events)
-const ScheduleView = () => {
-   const [selectedDate, setSelectedDate] = useState(new Date());
-
-   const timeSlots = Array.from({ length: 9 }, (_, i) => i + 9); // 9am to 5pm
-   const weekDays = ['Mon 11/11', 'Tue 12/11', 'Wed 13/11', 'Thu 14/11', 'Fri 15/11', 'Sat 16/11'];
-
-   const events = [
-      { day: 0, start: 10, duration: 1, title: "One-on-one", color: "bg-blue-600" },
-      { day: 0, start: 11, duration: 1, title: "Design weekly", color: "bg-teal-700" },
-      { day: 0, start: 13, duration: 2.5, title: "2025 Product Updates", color: "bg-blue-700" },
-      { day: 1, start: 10, duration: 1.5, title: "Brainstorming session", color: "bg-purple-200 text-purple-900" },
-      { day: 1, start: 13, duration: 1, title: "Yearly review", color: "bg-yellow-400 text-yellow-900" },
-      { day: 2, start: 9.5, duration: 1.5, title: "Design weekly", color: "bg-teal-700" },
-      { day: 2, start: 11.5, duration: 1, title: "Budget review", color: "bg-yellow-400 text-yellow-900" },
-      { day: 3, start: 10, duration: 1, title: "Second Interview", color: "bg-teal-700" },
-      { day: 4, start: 9, duration: 1, title: "Review & Planning", color: "bg-yellow-400 text-yellow-900" },
-      { day: 4, start: 10, duration: 1.5, title: "Review & Planning", color: "bg-teal-700" },
-   ];
-
-   return (
-      <div className="flex h-full bg-white dark:bg-[#0B100D] animate-fade-in overflow-hidden">
-         {/* Left Panel: Event Creation */}
-         <div className="w-96 border-r border-gray-200 dark:border-white/5 p-6 flex flex-col overflow-y-auto custom-scrollbar">
-            <div className="flex items-center justify-between mb-6">
-               <h2 className="text-lg font-bold text-gray-900 dark:text-white">New event</h2>
-               <button className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="space-y-6">
-               {/* Title Input */}
-               <div className="flex items-center gap-3">
-                  <Type className="w-5 h-5 text-gray-400" />
-                  <div className="flex-1">
-                     <input type="text" placeholder="Add title" className="w-full bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 ring-edluar-moss/20" defaultValue="Portfolio presentation" />
-                  </div>
-                  <Button size="sm" variant="outline" className="text-xs h-8">Insert template</Button>
-               </div>
-
-               {/* Date/Time */}
-               <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-gray-400 mt-2" />
-                  <div className="flex-1 space-y-2">
-                     <div className="flex gap-2">
-                        <select className="bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300"><option>tomorrow</option></select>
-                        <select className="bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300"><option>1:00 pm</option></select>
-                        <select className="bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300"><option>90 min</option></select>
-                     </div>
-                     <div className="flex items-center gap-1 text-xs text-blue-500 font-medium cursor-pointer">
-                        <Globe className="w-3 h-3" /> Europe/Amsterdam
-                     </div>
-                  </div>
-               </div>
-
-               {/* Location */}
-               <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                  <select className="flex-1 bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
-                     <option>Google Meet</option>
-                     <option>Zoom</option>
-                     <option>In Person</option>
-                  </select>
-               </div>
-               <p className="text-xs text-gray-400 ml-8">A link will be added when creating an event.</p>
-
-               {/* Attendees */}
-               <div className="flex items-start gap-3">
-                  <Users className="w-5 h-5 text-gray-400 mt-2" />
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                     <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-white/10 rounded-lg bg-white dark:bg-white/5">
-                        <div className="flex items-center gap-2">
-                           <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-[10px] font-bold">RP</div>
-                           <span className="text-xs font-medium truncate">Randy Philips</span>
-                        </div>
-                        <X className="w-3 h-3 text-gray-400 cursor-pointer" />
-                     </div>
-                     <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-white/10 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-                        <div className="flex items-center gap-2">
-                           <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e" className="w-6 h-6 rounded-full" />
-                           <span className="text-xs font-medium truncate">Diego Navarro</span>
-                        </div>
-                        <X className="w-3 h-3 text-gray-400 cursor-pointer" />
-                     </div>
-                     <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-white/10 rounded-lg bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                        <div className="flex items-center gap-2">
-                           <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330" className="w-6 h-6 rounded-full" />
-                           <span className="text-xs font-medium truncate">Giulia Bianchi</span>
-                        </div>
-                        <X className="w-3 h-3 text-gray-400 cursor-pointer" />
-                     </div>
-                     <div className="flex items-center justify-between p-2 border border-gray-200 dark:border-white/10 rounded-lg bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
-                        <div className="flex items-center gap-2">
-                           <img src="https://images.unsplash.com/photo-1599566150163-29194dcaad36" className="w-6 h-6 rounded-full" />
-                           <span className="text-xs font-medium truncate">Oliver Bennett</span>
-                        </div>
-                        <X className="w-3 h-3 text-gray-400 cursor-pointer" />
-                     </div>
-                     <button className="flex items-center justify-center p-2 border border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-edluar-moss hover:text-edluar-moss transition-colors">
-                        <Plus className="w-4 h-4" />
-                     </button>
-                  </div>
-               </div>
-
-               {/* Description */}
-               <div className="flex items-start gap-3">
-                  <AlignLeft className="w-5 h-5 text-gray-400 mt-2" />
-                  <textarea className="flex-1 bg-gray-50 dark:bg-white/5 border-none rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 h-32 resize-none" placeholder="Write some instructions for the attendees..."></textarea>
-               </div>
-            </div>
-
-            <div className="mt-auto pt-6 border-t border-gray-200 dark:border-white/10">
-               <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                     <Calendar className="w-4 h-4" />
-                     <span>Events: (diego@homerun.co)</span>
-                     <ChevronDown className="w-3 h-3" />
-                  </div>
-               </div>
-            </div>
-         </div>
-
-         {/* Right Panel: Calendar Grid */}
-         <div className="flex-1 flex flex-col bg-white dark:bg-[#0B100D]">
-            {/* Calendar Header */}
-            <div className="h-16 border-b border-gray-200 dark:border-white/5 flex items-center justify-between px-6">
-               <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-medium text-gray-700 dark:text-gray-200">Nov 11 - 16, 2024</h2>
-               </div>
-               <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">Today</Button>
-                  <div className="flex items-center border border-gray-200 dark:border-white/10 rounded-lg">
-                     <button className="p-1.5 hover:bg-gray-50 dark:hover:bg-white/5 border-r border-gray-200 dark:border-white/10"><ChevronLeft className="w-4 h-4" /></button>
-                     <button className="p-1.5 hover:bg-gray-50 dark:hover:bg-white/5"><ChevronRight className="w-4 h-4" /></button>
-                  </div>
-               </div>
-            </div>
-
-            {/* Calendar Grid */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-               <div className="flex min-w-[800px]">
-                  {/* Time Column */}
-                  <div className="w-16 flex-shrink-0 border-r border-gray-200 dark:border-white/5 bg-white dark:bg-[#0B100D] z-10 sticky left-0">
-                     <div className="h-10 border-b border-gray-200 dark:border-white/5"></div> {/* Header spacer */}
-                     {timeSlots.map(hour => (
-                        <div key={hour} className="h-20 border-b border-gray-100 dark:border-white/5 text-xs text-gray-400 text-right pr-2 pt-2">
-                           {hour > 12 ? hour - 12 : hour} {hour >= 12 ? 'pm' : 'am'}
-                        </div>
-                     ))}
-                  </div>
-
-                  {/* Days Columns */}
-                  {weekDays.map((day, dayIndex) => (
-                     <div key={day} className="flex-1 min-w-[120px] border-r border-gray-200 dark:border-white/5 relative">
-                        {/* Day Header */}
-                        <div className="h-10 border-b border-gray-200 dark:border-white/5 flex items-center justify-center text-xs font-medium text-gray-500 bg-gray-50/50 dark:bg-white/5 sticky top-0 z-10">
-                           {day}
-                        </div>
-
-                        {/* Grid Lines */}
-                        {timeSlots.map(hour => (
-                           <div key={hour} className="h-20 border-b border-gray-100 dark:border-white/5"></div>
-                        ))}
-
-                        {/* Events */}
-                        {events.filter(e => e.day === dayIndex).map((event, i) => (
-                           <div
-                              key={i}
-                              className={`absolute left-1 right-1 rounded-md p-2 text-xs font-medium text-white shadow-sm cursor-pointer hover:brightness-110 transition-all z-10 ${event.color}`}
-                              style={{
-                                 top: `${(event.start - 9) * 80 + 40}px`, // 80px per hour + 40px header offset
-                                 height: `${event.duration * 80 - 4}px`
-                              }}
-                           >
-                              <div className="font-bold truncate">{event.start > 12 ? event.start - 12 : event.start}:00 - {event.start + event.duration > 12 ? event.start + event.duration - 12 : event.start + event.duration}:00</div>
-                              <div className="truncate">{event.title}</div>
+                        <div className="flex justify-between items-start mb-1">
+                           <div className="flex items-center gap-2">
+                              <div className="relative">
+                                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
+                                    {app.first_name?.[0]}{app.last_name?.[0]}
+                                 </div>
+                              </div>
+                              <div>
+                                 <h3 className="font-bold text-sm text-gray-900 dark:text-white">{app.first_name} {app.last_name}</h3>
+                                 <p className="text-xs text-gray-500">{app.status.replace('_', ' ')}</p>
+                              </div>
                            </div>
-                        ))}
-
-                        {/* Busy Indicator Mock */}
-                        {dayIndex === 1 && (
-                           <div className="absolute top-[40px] left-0 right-0 h-6 bg-yellow-400 rounded-sm mx-1 flex items-center px-2 text-[10px] font-bold text-yellow-900">Busy</div>
-                        )}
+                        </div>
+                        <p className="text-xs text-gray-500 ml-12 mt-1 line-clamp-1">
+                           {app.email}
+                        </p>
                      </div>
-                  ))}
-               </div>
+                  ))
+               )}
             </div>
+         </div>
 
-            {/* Footer Actions */}
-            <div className="h-16 border-t border-gray-200 dark:border-white/5 flex items-center justify-end px-6 gap-3 bg-white dark:bg-[#0B100D]">
-               <Button variant="outline">Discard</Button>
-               <Button variant="primary" className="bg-indigo-600 hover:bg-indigo-700 text-white border-none">Next: Preview</Button>
-            </div>
+         {/* 2. CENTER: Conversation Thread */}
+         <div className="flex-1 flex flex-col bg-gray-50 dark:bg-edluar-deep/50">
+            {selectedApplication ? (
+               <>
+                  {/* Header */}
+                  <div className="h-16 bg-white dark:bg-edluar-surface border-b border-gray-200 dark:border-white/10 px-6 flex items-center justify-between flex-shrink-0">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-bold">
+                           {selectedApplication.first_name?.[0]}{selectedApplication.last_name?.[0]}
+                        </div>
+                        <div>
+                           <h2 className="font-bold text-gray-900 dark:text-white">{selectedApplication.first_name} {selectedApplication.last_name}</h2>
+                           <p className="text-xs text-gray-500">{selectedApplication.status.replace('_', ' ')}</p>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+                     {activities.length === 0 ? (
+                        <div className="text-center text-gray-400 mt-20">
+                           <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                           <p>No messages yet. Start the conversation!</p>
+                        </div>
+                     ) : (
+                        activities.map((activity: any) => {
+                           const isRecruiter = activity.type === 'note' || activity.type === 'email';
+                           const isNote = activity.type === 'note';
+
+                           return (
+                              <div key={activity.id} className={`flex ${isRecruiter ? 'justify-end' : 'justify-start'}`}>
+                                 <div className={`max-w-md ${isRecruiter ? 'bg-edluar-moss text-white' : 'bg-white dark:bg-edluar-surface border border-gray-200 dark:border-white/10'} rounded-2xl p-4 shadow-sm`}>
+                                    {isNote && (
+                                       <div className="flex items-center gap-2 mb-2 text-xs opacity-80">
+                                          <FileText className="w-3 h-3" />
+                                          <span>Internal Note</span>
+                                       </div>
+                                    )}
+                                    <p className={`text-sm ${isRecruiter ? 'text-white' : 'text-gray-900 dark:text-white'}`}>
+                                       {activity.content}
+                                    </p>
+                                    <span className={`text-xs mt-2 block ${isRecruiter ? 'text-white/70' : 'text-gray-400'}`}>
+                                       {new Date(activity.created_at).toLocaleString()}
+                                    </span>
+                                 </div>
+                              </div>
+                           );
+                        })
+                     )}
+                  </div>
+
+                  {/* Input Area */}
+                  <div className="bg-white dark:bg-edluar-surface border-t border-gray-200 dark:border-white/10 p-4">
+                     {/* Mode Toggle */}
+                     <div className="flex items-center gap-2 mb-3">
+                        <button
+                           onClick={() => setInputMode('email')}
+                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${inputMode === 'email' ? 'bg-edluar-moss text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'}`}
+                        >
+                           <Mail className="w-3 h-3 inline mr-1" />
+                           Email
+                        </button>
+                        <button
+                           onClick={() => setInputMode('note')}
+                           className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${inputMode === 'note' ? 'bg-edluar-moss text-white' : 'bg-gray-100 dark:bg-white/5 text-gray-600 dark:text-gray-400'}`}
+                        >
+                           <FileText className="w-3 h-3 inline mr-1" />
+                           Internal Note
+                        </button>
+                     </div>
+
+                     <div className="flex gap-2">
+                        <input
+                           type="text"
+                           value={newMessage}
+                           onChange={(e) => setNewMessage(e.target.value)}
+                           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                           placeholder={inputMode === 'email' ? "Type your email..." : "Add an internal note..."}
+                           className="flex-1 px-4 py-3 bg-gray-100 dark:bg-white/5 border-none rounded-lg focus:ring-2 focus:ring-edluar-moss/50 transition-all"
+                        />
+                        <button
+                           onClick={handleSend}
+                           className="px-6 py-3 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg font-bold transition-all flex items-center gap-2"
+                        >
+                           <Send className="w-4 h-4" />
+                           Send
+                        </button>
+                     </div>
+                  </div>
+               </>
+            ) : (
+               <div className="flex-1 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                     <MessageSquare className="w-20 h-20 mx-auto mb-4 opacity-20" />
+                     <p>Select a conversation to start messaging</p>
+                  </div>
+               </div>
+            )}
          </div>
       </div>
    );
 };
 
-// --- VIEW 4: REPORTS & INSIGHTS (New Feature) ---
+// 5. SCHEDULE VIEW - WITH REAL SCHEDULED ACTIVITIES
+
+
+// 6. REPORTS VIEW - WITH REAL APPLICATION ANALYTICS
 const ReportsView = () => {
-   // Mock Analytics Data (In real app, calculate this from 'candidates' array)
-   const metrics = {
-      timeToHire: 18,
-      acceptanceRate: 85,
-      activePipeline: 42,
-      sourceQuality: [
-         { source: "LinkedIn", score: 92, color: "bg-[#0077b5]" },
-         { source: "Referral", score: 88, color: "bg-emerald-500" },
-         { source: "Indeed", score: 65, color: "bg-blue-400" },
-         { source: "Direct", score: 78, color: "bg-edluar-moss" },
-      ],
-      funnel: [
-         { stage: "Applied", count: 145, drop: 0 },
-         { stage: "Screening", count: 68, drop: 53 },
-         { stage: "Interview", count: 24, drop: 65 },
-         { stage: "Offer", count: 8, drop: 66 },
-         { stage: "Hired", count: 6, drop: 25 },
-      ]
+   const [applications, setApplications] = useState<any[]>([]);
+   const [loading, setLoading] = useState(true);
+
+   useEffect(() => {
+      fetchAllApplications();
+   }, []);
+
+   const fetchAllApplications = async () => {
+      try {
+         setLoading(true);
+         // Fetch from our test job (in production, aggregate from all jobs)
+         const response = await fetch('http://localhost:5000/api/applications/job/2');
+         const data = await response.json();
+
+         // Flatten all applications
+         const allApps = Object.values(data).flat();
+         setApplications(allApps);
+         setLoading(false);
+      } catch (error) {
+         console.error("Failed to fetch applications:", error);
+         setLoading(false);
+      }
    };
+
+   // Calculate metrics from real data
+   const calculateMetrics = () => {
+      if (applications.length === 0) {
+         return {
+            timeToHire: 0,
+            acceptanceRate: 0,
+            activePipeline: 0,
+            sourceQuality: [],
+            funnel: []
+         };
+      }
+
+      // Count by stage
+      const stageCount = {
+         applied: applications.filter(a => a.status === 'applied').length,
+         phone_screen: applications.filter(a => a.status === 'phone_screen').length,
+         interview: applications.filter(a => a.status === 'interview').length,
+         offer: applications.filter(a => a.status === 'offer').length,
+         hired: applications.filter(a => a.status === 'hired').length,
+      };
+
+      // Build funnel with drop rates
+      const totalApplied = stageCount.applied + stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired;
+      const funnel = [
+         { stage: "Applied", count: totalApplied, drop: 0 },
+         {
+            stage: "Phone Screen",
+            count: stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired,
+            drop: totalApplied > 0 ? Math.round((stageCount.applied / totalApplied) * 100) : 0
+         },
+         {
+            stage: "Interview",
+            count: stageCount.interview + stageCount.offer + stageCount.hired,
+            drop: (stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired) > 0
+               ? Math.round((stageCount.phone_screen / (stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired)) * 100)
+               : 0
+         },
+         {
+            stage: "Offer",
+            count: stageCount.offer + stageCount.hired,
+            drop: (stageCount.interview + stageCount.offer + stageCount.hired) > 0
+               ? Math.round((stageCount.interview / (stageCount.interview + stageCount.offer + stageCount.hired)) * 100)
+               : 0
+         },
+         {
+            stage: "Hired",
+            count: stageCount.hired,
+            drop: (stageCount.offer + stageCount.hired) > 0
+               ? Math.round((stageCount.offer / (stageCount.offer + stageCount.hired)) * 100)
+               : 0
+         },
+      ];
+
+      // Source quality (count by source)
+      const sourceCounts: any = {};
+      applications.forEach(app => {
+         const source = app.source || 'Direct';
+         sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+      });
+
+      const sourceQuality = Object.entries(sourceCounts).map(([source, count]: any) => ({
+         source,
+         score: Math.min(100, count * 20), // Simple score based on volume
+         color: source === 'LinkedIn' ? 'bg-[#0077b5]' :
+            source === 'Referral' ? 'bg-emerald-500' :
+               source === 'Indeed' ? 'bg-blue-400' : 'bg-edluar-moss'
+      }));
+
+      return {
+         timeToHire: 18, // Would need created_at vs hired_at calculation
+         acceptanceRate: stageCount.hired > 0 && (stageCount.offer + stageCount.hired) > 0
+            ? Math.round((stageCount.hired / (stageCount.offer + stageCount.hired)) * 100)
+            : 0,
+         activePipeline: applications.length - stageCount.hired,
+         sourceQuality,
+         funnel
+      };
+   };
+
+   const metrics = calculateMetrics();
+
+   if (loading) {
+      return (
+         <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+               <div className="animate-spin w-8 h-8 border-4 border-edluar-moss border-t-transparent rounded-full mx-auto mb-4"></div>
+               <p className="text-gray-500">Loading analytics...</p>
+            </div>
+         </div>
+      );
+   }
 
    return (
       <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0B100D] animate-fade-in overflow-y-auto p-8">
          <header className="mb-10">
-            <h1 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-2">Ecosystem Insights</h1>
-            <p className="text-edluar-dark/60 dark:text-edluar-cream/60">Live telemetry on your recruitment garden.</p>
+            <h1 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-2">Recruitment Analytics</h1>
+            <p className="text-edluar-dark/60 dark:text-edluar-cream/60">Real-time insights from your hiring pipeline</p>
          </header>
 
-         {/* Top Level Metrics */}
-         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-               <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Growth Velocity</h3>
-                  <Clock className="w-5 h-5 text-edluar-moss" />
-               </div>
-               <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.timeToHire}</span>
-                  <span className="text-sm text-gray-500">days avg</span>
-               </div>
-               <div className="mt-4 text-xs text-green-600 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded inline-block">
-                  ↓ 12% vs last month
+         {applications.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+               <div className="text-center">
+                  <TrendingUp className="w-20 h-20 mx-auto mb-4 text-gray-300 opacity-50" />
+                  <p className="text-gray-400">No application data yet</p>
+                  <p className="text-sm text-gray-400 mt-2">Analytics will appear once you have candidates in your pipeline</p>
                </div>
             </div>
-
-            <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-               <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Offer Acceptance</h3>
-                  <CheckCircle2 className="w-5 h-5 text-blue-500" />
-               </div>
-               <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.acceptanceRate}%</span>
-               </div>
-               <div className="mt-4 w-full bg-gray-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                  <div className="bg-blue-500 h-full rounded-full" style={{ width: `${metrics.acceptanceRate}%` }}></div>
-               </div>
-            </div>
-
-            <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-               <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Active Seeds</h3>
-                  <Users className="w-5 h-5 text-orange-400" />
-               </div>
-               <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.activePipeline}</span>
-                  <span className="text-sm text-gray-500">candidates</span>
-               </div>
-               <p className="mt-4 text-xs text-gray-400">Across 3 active roles</p>
-            </div>
-         </div>
-
-         <div className="grid lg:grid-cols-2 gap-8">
-            {/* Custom SVG Funnel Chart (High Logic) */}
-            <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-               <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Nurture Yield (Funnel)</h3>
-               <div className="space-y-4">
-                  {metrics.funnel.map((step, i) => (
-                     <div key={step.stage} className="relative group">
-                        <div className="flex justify-between text-sm mb-1">
-                           <span className="font-medium text-gray-700 dark:text-gray-300">{step.stage}</span>
-                           <span className="text-gray-500">{step.count}</span>
-                        </div>
-                        <div className="w-full bg-gray-100 dark:bg-white/5 h-10 rounded-lg relative overflow-hidden">
-                           <div
-                              className={`h-full rounded-lg transition-all duration-1000 ease-out ${i === 4 ? 'bg-edluar-moss' : 'bg-edluar-pale dark:bg-edluar-moss/40'}`}
-                              style={{ width: `${(step.count / metrics.funnel[0].count) * 100}%` }}
-                           ></div>
-                           {/* Dropoff Marker */}
-                           {i > 0 && (
-                              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-red-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                 -{step.drop}% drop
-                              </div>
-                           )}
-                        </div>
+         ) : (
+            <>
+               {/* Top Level Metrics */}
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
+                     <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Time to Hire</h3>
+                        <Clock className="w-5 h-5 text-edluar-moss" />
                      </div>
-                  ))}
-               </div>
-            </div>
+                     <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.timeToHire}</span>
+                        <span className="text-sm text-gray-500">days avg</span>
+                     </div>
+                     <div className="mt-4 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded inline-block">
+                        Industry Average
+                     </div>
+                  </div>
 
-            {/* Source Quality Analysis */}
-            <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-               <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Soil Quality (Source Impact)</h3>
-               <div className="h-64 flex items-end justify-between gap-4 px-2">
-                  {metrics.sourceQuality.map((src) => (
-                     <div key={src.source} className="flex flex-col items-center gap-2 w-full group">
-                        <div className="relative w-full flex justify-center">
-                           <div
-                              className={`w-full max-w-[60px] rounded-t-lg transition-all duration-700 ${src.color} opacity-80 group-hover:opacity-100`}
-                              style={{ height: `${src.score * 2}px` }}
-                           >
-                              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                 {src.score}/100
+                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
+                     <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Offer Acceptance</h3>
+                        <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                     </div>
+                     <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.acceptanceRate}%</span>
+                     </div>
+                     <div className="mt-4 w-full bg-gray-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                        <div className="bg-blue-500 h-full rounded-full" style={{ width: `${metrics.acceptanceRate}%` }}></div>
+                     </div>
+                  </div>
+
+                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
+                     <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Active Pipeline</h3>
+                        <Users className="w-5 h-5 text-orange-400" />
+                     </div>
+                     <div className="flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.activePipeline}</span>
+                        <span className="text-sm text-gray-500">candidates</span>
+                     </div>
+                     <p className="mt-4 text-xs text-gray-400">Total: {applications.length} applications</p>
+                  </div>
+               </div>
+
+               <div className="grid lg:grid-cols-2 gap-8">
+                  {/* Pipeline Funnel */}
+                  <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
+                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Pipeline Funnel</h3>
+                     <div className="space-y-4">
+                        {metrics.funnel.map((step, i) => (
+                           <div key={step.stage} className="relative group">
+                              <div className="flex justify-between text-sm mb-1">
+                                 <span className="font-medium text-gray-700 dark:text-gray-300">{step.stage}</span>
+                                 <span className="text-gray-500">{step.count}</span>
+                              </div>
+                              <div className="w-full bg-gray-100 dark:bg-white/5 h-10 rounded-lg relative overflow-hidden">
+                                 <div
+                                    className={`h-full rounded-lg transition-all duration-1000 ease-out ${i === 4 ? 'bg-edluar-moss' : 'bg-edluar-pale dark:bg-edluar-moss/40'}`}
+                                    style={{ width: metrics.funnel[0].count > 0 ? `${(step.count / metrics.funnel[0].count) * 100}%` : '0%' }}
+                                 ></div>
+                                 {i > 0 && step.drop > 0 && (
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-red-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                                       -{step.drop}% drop
+                                    </div>
+                                 )}
                               </div>
                            </div>
-                        </div>
-                        <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{src.source}</span>
+                        ))}
                      </div>
-                  ))}
+                  </div>
+
+                  {/* Source Quality */}
+                  <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
+                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Application Sources</h3>
+                     {metrics.sourceQuality.length === 0 ? (
+                        <div className="h-64 flex items-center justify-center text-gray-400">
+                           <p>No source data available</p>
+                        </div>
+                     ) : (
+                        <div className="h-64 flex items-end justify-between gap-4 px-2">
+                           {metrics.sourceQuality.map((src: any) => (
+                              <div key={src.source} className="flex flex-col items-center gap-2 w-full group">
+                                 <div className="relative w-full flex justify-center">
+                                    <div
+                                       className={`w-full max-w-[60px] rounded-t-lg transition-all duration-700 ${src.color} opacity-80 group-hover:opacity-100`}
+                                       style={{ height: `${src.score * 2}px` }}
+                                    >
+                                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                          {src.score}/100
+                                       </div>
+                                    </div>
+                                 </div>
+                                 <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{src.source}</span>
+                              </div>
+                           ))}
+                        </div>
+                     )}
+                  </div>
                </div>
-               <p className="mt-6 text-sm text-gray-500 text-center bg-gray-50 dark:bg-white/5 p-3 rounded-lg">
-                  <strong>Insight:</strong> LinkedIn candidates have a <strong>24% higher</strong> survival rate than Indeed.
-               </p>
-            </div>
-         </div>
+            </>
+         )}
       </div>
    );
 };
@@ -1643,22 +1924,33 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
    const [activeView, setActiveView] = useState<'overview' | 'jobs' | 'candidates' | 'career_site' | 'inbox' | 'calendar' | 'reports' | 'settings'>('overview');
    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+   const [pendingJobData, setPendingJobData] = useState<any>(null);
 
    const handleLogout = () => { logout(); onNavigate('home'); };
 
-   const handleCreateJob = (jobData: any) => {
-      console.log("Creating Job:", jobData);
+   const handleCreateJob = (newJob: any) => {
+      console.log("Created Job:", newJob);
       setIsJobModalOpen(false);
-      setActiveView('career_site'); // Auto-redirect to Editor (Like Video)
+      // Navigate to editor with the new job ID
+      onNavigate('job-editor', { jobId: newJob.id });
+   };
+
+   const handleEditJob = (jobId: number) => {
+      onNavigate('job-editor', { jobId });
+   };
+
+   const handleJobPublished = () => {
+      setPendingJobData(null);
+      setActiveView('jobs');
    };
 
    const getInitials = (name: string) => name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
    const displayName = user?.name || 'Guest User';
    const initials = user?.name ? getInitials(user.name) : 'GU';
 
-   const NavItem = ({ id, icon: Icon, label, count }: any) => (
+   const NavItem = ({ id, icon: Icon, label, count, onClick }: any) => (
       <button
-         onClick={() => setActiveView(id)}
+         onClick={onClick || (() => setActiveView(id))}
          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === id
             ? 'bg-edluar-moss text-white shadow-lg shadow-edluar-moss/20'
             : 'text-edluar-dark/60 dark:text-edluar-cream/60 hover:bg-edluar-pale/30 dark:hover:bg-white/5'
@@ -1678,8 +1970,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                   className="flex items-center gap-3 cursor-pointer hover:bg-edluar-pale/20 dark:hover:bg-white/5 p-2 rounded-xl transition-colors"
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                >
-                  <div className="w-10 h-10 bg-edluar-moss rounded-full flex items-center justify-center text-white font-bold font-serif shadow-md text-sm">
-                     {initials}
+                  <div className="w-10 h-10 bg-edluar-moss rounded-full flex items-center justify-center text-white font-bold font-serif shadow-md text-sm overflow-hidden">
+                     {(user as any)?.avatar ? (
+                        <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
+                     ) : (
+                        initials
+                     )}
                   </div>
                   <div className="flex flex-col">
                      <span className="font-bold text-sm text-edluar-dark dark:text-white leading-tight">{displayName}</span>
@@ -1699,13 +1995,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                         </div>
                         <div className="p-2 space-y-1">
                            <button
-                              onClick={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }}
+                              onClick={() => { setIsProfileMenuOpen(false); onNavigate('settings', { tab: 'profile' }); }}
                               className="w-full flex items-center gap-3 px-3 py-2 text-sm text-edluar-dark/70 dark:text-white/70 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
                            >
                               <User className="w-4 h-4" /> My Profile
                            </button>
                            <button
-                              onClick={() => { setIsProfileMenuOpen(false); setActiveView('settings'); }}
+                              onClick={() => { setIsProfileMenuOpen(false); onNavigate('settings', { tab: 'account' }); }}
                               className="w-full flex items-center gap-3 px-3 py-2 text-sm text-edluar-dark/70 dark:text-white/70 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
                            >
                               <Settings className="w-4 h-4" /> Account Settings
@@ -1713,13 +2009,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                         </div>
                         <div className="h-px bg-edluar-pale/50 dark:bg-white/5 mx-2"></div>
                         <div className="p-2">
-                           <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-edluar-moss hover:bg-edluar-moss/10 rounded-lg transition-colors text-left">
+                           <button
+                              onClick={() => { setIsProfileMenuOpen(false); onNavigate('settings', { tab: 'workspace' }); }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-edluar-moss hover:bg-edluar-moss/10 rounded-lg transition-colors text-left"
+                           >
                               <ShieldCheck className="w-4 h-4" /> Workspace Admin
                            </button>
                         </div>
                         <div className="h-px bg-edluar-pale/50 dark:bg-white/5 mx-2"></div>
                         <div className="p-2">
-                           <button className="w-full flex items-center gap-3 px-3 py-2 text-sm text-edluar-dark/70 dark:text-white/70 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors text-left">
+                           <button
+                              onClick={() => { setIsProfileMenuOpen(false); onNavigate('settings', { tab: 'support' }); }}
+                              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-edluar-dark/70 dark:text-white/70 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors text-left"
+                           >
                               <HelpCircle className="w-4 h-4" /> Help & Support
                            </button>
                         </div>
@@ -1741,8 +2043,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                <NavItem id="overview" icon={LayoutGrid} label="Dashboard" />
                <NavItem id="jobs" icon={Briefcase} label="Jobs & Pipeline" count={3} />
                <NavItem id="candidates" icon={Users} label="Candidates" count={128} />
-               <NavItem id="career_site" icon={Layout} label="Career Site Builder" />
                <NavItem id="inbox" icon={MessageSquare} label="Inbox" count={5} />
+
                <NavItem id="calendar" icon={Calendar} label="Schedule" />
                <NavItem id="reports" icon={FileText} label="Reports" />
             </div>
@@ -1773,9 +2075,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
 
             <div className="flex-1 overflow-auto">
                {activeView === 'overview' && <OverviewView user={user} onOpenCreate={() => setIsJobModalOpen(true)} />}
-               {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} />}
+               {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} />}
                {activeView === 'candidates' && <ATSView />}
-               {activeView === 'career_site' && <CareerSiteView />}
+               {activeView === 'career_site' && <CareerSiteView pendingJobData={pendingJobData} onPublish={handleJobPublished} />}
                {activeView === 'calendar' && <ScheduleView />}
                {activeView === 'reports' && <ReportsView />}
                {activeView === 'inbox' && <InboxView />}

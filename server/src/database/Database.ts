@@ -8,7 +8,7 @@ export class DatabaseManager {
     private initPromise: Promise<void>;
 
     private constructor() {
-        const dbPath = process.env.DATABASE_PATH || './data/edluar.db';
+        const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../data/edluar.db');
         const dbDir = path.dirname(dbPath);
         if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
 

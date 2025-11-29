@@ -5,19 +5,7 @@ import { Button } from './components/Button';
 import { AboutPage } from './components/AboutPage';
 import { CareersPage } from './components/CareersPage';
 import { BlogPage } from './components/BlogPage';
-import { BlogPostPage } from './components/BlogPostPage';
-import { ContactPage } from './components/ContactPage';
-import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
-import { LoginPage } from './components/LoginPage';
-import { DashboardPage } from './components/DashboardPage';
-import { IntegrationsPage } from './components/IntegrationsPage';
-import { ChangelogPage } from './components/ChangelogPage';
-import { ProtectedRoute } from './components/ProtectedRoute.tsx';
-import { useAuth } from './context/AuthContext';
 import {
-  Users,
-  BarChart3,
-  Calendar,
   ShieldCheck,
   ArrowRight,
   CheckCircle2,
@@ -36,8 +24,37 @@ import {
   HelpCircle,
   Hexagon,
   Boxes,
-  Github
+  Github,
+  Users,
+  BarChart3,
+  Calendar,
+  Menu,
+  X,
+  Check,
+  ChevronRight,
+  Play,
+  MessageSquare,
+  Search,
+  Bell,
+  LogOut,
+  Settings,
+  User,
+  LayoutGrid,
+  FileText,
+  Briefcase,
+  TrendingUp
 } from 'lucide-react';
+import { DashboardPage } from './components/DashboardPage';
+import { LoginPage } from './components/LoginPage';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { SettingsLayout } from './components/SettingsLayout';
+import { useAuth } from './context/AuthContext';
+import { JobEditorPage } from './components/JobEditorPage';
+import { BlogPostPage } from './components/BlogPostPage';
+import { ContactPage } from './components/ContactPage';
+import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
+import { IntegrationsPage } from './components/IntegrationsPage';
+import { ChangelogPage } from './components/ChangelogPage';
 
 const FeaturesSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -789,6 +806,9 @@ const App: React.FC = () => {
     } else if (target === 'dashboard') {
       setPage('dashboard');
       window.scrollTo(0, 0);
+    } else if (target === 'settings') {
+      setPage('settings');
+      window.scrollTo(0, 0);
     } else if (target === 'integrations') {
       setPage('integrations');
       window.scrollTo(0, 0);
@@ -811,8 +831,7 @@ const App: React.FC = () => {
   if (page === 'login') {
     return (
       <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
-        <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
-        <LoginPage onNavigate={handleNavigate} initialMode={authMode} />
+        <LoginPage initialMode={authMode} onNavigate={handleNavigate} />
       </div>
     );
   }
@@ -821,16 +840,34 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
         <ProtectedRoute>
-          <DashboardPage onNavigate={handleNavigate} toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+          <DashboardPage
+            onNavigate={handleNavigate}
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
+          />
+        </ProtectedRoute>
+      </div>
+    );
+  }
+
+  if (page === 'settings') {
+    return (
+      <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
+        <ProtectedRoute>
+          <SettingsLayout
+            onBack={() => handleNavigate('dashboard')}
+            initialTab={navParams.tab || 'profile'}
+            isDarkMode={isDarkMode}
+            toggleTheme={toggleTheme}
+          />
         </ProtectedRoute>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep selection:bg-edluar-pale dark:selection:bg-edluar-moss selection:text-edluar-dark dark:selection:text-white transition-colors duration-300">
+    <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300">
       <Header isDarkMode={isDarkMode} toggleTheme={toggleTheme} currentPage={page} onNavigate={handleNavigate} />
-
       {page === 'home' ? (
         <>
           <section className="relative pt-20 pb-32 overflow-hidden">

@@ -1,132 +1,48 @@
 import { DatabaseManager } from '../database/Database';
 
-interface Candidate {
-    id: number;
-    user_id: number;
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone: string | null;
-    resume_url: string | null;
-    status: string;
-    current_stage: string | null;
-    created_at: string;
-    updated_at: string;
-}
-
-interface CreateCandidateData {
-    userId: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phone?: string;
-    resumeUrl?: string;
-    status?: string;
-    currentStage?: string;
-}
-
-/**
- * CandidateRepository - Repository Pattern for Candidates
- * High-density data access layer for candidate management
- */
 export class CandidateRepository {
-    private static getDB() {
-        return DatabaseManager.getInstance();
+    static async findByEmail(email: string): Promise<any> {
+        return DatabaseManager.getInstance().get('SELECT * FROM candidates WHERE email = ?', [email]);
+    }
+
+    static async findById(id: number): Promise<any> {
+        return DatabaseManager.getInstance().get('SELECT * FROM candidates WHERE id = ?', [id]);
     }
 
     /**
-     * Find all candidates for a user
-     */
-    static async findByUserId(userId: number): Promise<Candidate[]> {
-        return this.getDB().all('SELECT * FROM candidates WHERE user_id = ? ORDER BY created_at DESC', [userId]);
-    }
+      * Find candidate by email or create new one (for application upsert)
+      * Prevents duplicate candidates when applying to multiple jobs
+      */
+    static async findOrCreateByEmail(email: string, data: { firstName: string; lastName: string; phone?: string; resumeUrl?: string; tags?: string[] }): Promise<any> {
+        // Check if candidate exists
+        const existing = await DatabaseManager.getInstance().get(
+            'SELECT * FROM candidates WHERE email = ?',
+            [email]
+        );
 
-    /**
-     * Find candidate by ID
-     */
-    static async findById(id: number): Promise<Candidate | undefined> {
-        return this.getDB().get('SELECT * FROM candidates WHERE id = ?', [id]);
-    }
+        if (existing) {
+            return existing;
+        }
 
-    /**
-     * Create new candidate
-     */
-    static async create(data: CreateCandidateData): Promise<Candidate> {
-        const result = await this.getDB().run(
-            `INSERT INTO candidates (user_id, first_name, last_name, email, phone, resume_url, status, current_stage)
+        // Create new candidate
+        const tagsJson = data.tags ? JSON.stringify(data.tags) : null;
+        const result = await DatabaseManager.getInstance().run(
+            `INSERT INTO candidates (user_id, first_name, last_name, email, phone, resume_url, status, tags)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                data.userId,
-                data.firstName,
-                data.lastName,
-                data.email,
-                data.phone || null,
-                data.resumeUrl || null,
-                data.status || 'new',
-                data.currentStage || null
-            ]
+            [1, data.firstName, data.lastName, email, data.phone || null, data.resumeUrl || null, 'new', tagsJson]
         );
 
-        const newCandidate = await this.findById(Number(result.lastID));
-        if (!newCandidate) {
-            throw new Error('Failed to create candidate');
-        }
-
-        return newCandidate;
+        return this.findById(result.lastID);
     }
 
-    /**
-     * Update candidate
-     */
-    static async update(id: number, data: Partial<CreateCandidateData>): Promise<Candidate> {
-        const updates: string[] = [];
-        const values: any[] = [];
-
-        if (data.firstName) {
-            updates.push('first_name = ?');
-            values.push(data.firstName);
-        }
-        if (data.lastName) {
-            updates.push('last_name = ?');
-            values.push(data.lastName);
-        }
-        if (data.status) {
-            updates.push('status = ?');
-            values.push(data.status);
-        }
-        if (data.currentStage) {
-            updates.push('current_stage = ?');
-            values.push(data.currentStage);
-        }
-
-        updates.push('updated_at = CURRENT_TIMESTAMP');
-        values.push(id);
-
-        await this.getDB().run(
-            `UPDATE candidates SET ${updates.join(', ')} WHERE id = ?`,
-            values
+    static async updateTags(id: number, tags: string[]): Promise<void> {
+        await DatabaseManager.getInstance().run(
+            'UPDATE candidates SET tags = ? WHERE id = ?',
+            [JSON.stringify(tags), id]
         );
-
-        const updated = await this.findById(id);
-        if (!updated) {
-            throw new Error('Candidate not found');
-        }
-
-        return updated;
     }
 
-    /**
-     * Delete candidate
-     */
-    static async delete(id: number): Promise<boolean> {
-        const result = await this.getDB().run('DELETE FROM candidates WHERE id = ?', [id]);
-        return result.changes > 0;
-    }
-
-    /**
-     * Search candidates by status
-     */
-    static async findByStatus(userId: number, status: string): Promise<Candidate[]> {
-        return this.getDB().all('SELECT * FROM candidates WHERE user_id = ? AND status = ?', [userId, status]);
+    static async findByUserId(userId: number): Promise<any[]> {
+        return DatabaseManager.getInstance().all('SELECT * FROM candidates WHERE user_id = ? ORDER BY created_at DESC', [userId]);
     }
 }
