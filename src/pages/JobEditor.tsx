@@ -49,7 +49,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
 
     // State for Form Config
     const [formConfig, setFormConfig] = useState<FormConfig>({
-        personalInfo: { name: true, email: true, linkedin: true, education: false, resume: true, coverLetter: true },
+        personalInfo: { name: true, email: true, linkedin: true, education: false, resume: true, coverLetter: true, phone: true, portfolio: true },
         questions: []
     });
 
