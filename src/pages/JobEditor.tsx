@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, Layers } from 'lucide-react';
+import { ArrowLeft, Save, Eye, Layout, FileText, Users, Palette, Layers, ExternalLink } from 'lucide-react';
 import { SITE_TEMPLATES } from '../data/templates';
 import { ContentBuilder, ContentBlock } from '../../components/ContentBuilder';
 import { ApplyFormControls, FormConfig } from '../../components/ApplyFormControls';
@@ -10,10 +10,12 @@ import { JobBlockRenderer } from '../../components/JobBlockRenderer';
 interface JobEditorProps {
     jobId: number;
     onBack: () => void;
+    onNavigate: (page: string, params?: any) => void;
+    initialTab?: 'post' | 'form' | 'candidates' | 'design';
 }
 
-export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack }) => {
-    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design'>('post');
+export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate, initialTab = 'post' }) => {
+    const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design'>(initialTab);
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -168,8 +170,13 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack }) => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                        <Eye className="w-5 h-5" />
+                    <button
+                        onClick={() => onNavigate('public-job', { jobId })}
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex items-center gap-2"
+                        title="Simulate Candidate View"
+                    >
+                        <ExternalLink className="w-5 h-5" />
+                        <span className="text-xs font-medium hidden sm:inline">Simulate View</span>
                     </button>
                     <button
                         onClick={handleSave}

@@ -49,7 +49,8 @@ import { LoginPage } from './components/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { SettingsLayout } from './components/SettingsLayout';
 import { useAuth } from './context/AuthContext';
-import { JobEditorPage } from './components/JobEditorPage';
+import { JobEditor } from './src/pages/JobEditor';
+import { PublicJobPage } from './src/pages/PublicJobPage';
 import { BlogPostPage } from './components/BlogPostPage';
 import { ContactPage } from './components/ContactPage';
 import { PrivacyPolicyPage } from './components/PrivacyPolicyPage';
@@ -812,6 +813,9 @@ const App: React.FC = () => {
     } else if (target === 'job-editor') {
       setPage('job-editor');
       window.scrollTo(0, 0);
+    } else if (target === 'public-job') {
+      setPage('public-job');
+      window.scrollTo(0, 0);
     } else {
       setPage('home');
       if (['features', 'integrations', 'customer', 'pricing', 'faq'].includes(target)) {
@@ -861,16 +865,25 @@ const App: React.FC = () => {
       </div>
     );
   }
-
   if (page === 'job-editor') {
     return (
       <div className="min-h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 font-sans">
         <ProtectedRoute>
-          <JobEditorPage
+          <JobEditor
+            onBack={() => handleNavigate('dashboard')}
             onNavigate={handleNavigate}
             jobId={navParams.jobId}
+            initialTab={navParams.tab}
           />
         </ProtectedRoute>
+      </div>
+    );
+  }
+
+  if (page === 'public-job') {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-300 font-sans">
+        <PublicJobPage jobId={navParams.jobId} />
       </div>
     );
   }

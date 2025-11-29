@@ -1932,7 +1932,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
       console.log("Created Job:", newJob);
       setIsJobModalOpen(false);
       // Navigate to editor with the new job ID
-      onNavigate('job-editor', { jobId: newJob.id });
+      onNavigate('job-editor', { jobId: newJob.id, tab: 'design' });
    };
 
    const handleEditJob = (jobId: number) => {
