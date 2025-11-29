@@ -25,18 +25,7 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
     // --- JOB SWITCHER STATE ---
     const [allJobs, setAllJobs] = useState<any[]>([]);
     const [isJobSwitcherOpen, setIsJobSwitcherOpen] = useState(false);
-    const switcherRef = useRef<HTMLDivElement>(null);
-
-    // Close switcher when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (switcherRef.current && !switcherRef.current.contains(event.target as Node)) {
-                setIsJobSwitcherOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    // switcherRef and mousedown listener removed in favor of backdrop
 
     // Fetch ALL jobs for the switcher
     useEffect(() => {
@@ -132,48 +121,47 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                         <ArrowLeft className="w-5 h-5 text-gray-500" />
                     </button>
 
-                    {/* --- JOB SWITCHER DROPDOWN --- */}
-                    <div className="relative" ref={switcherRef}>
+                    {/* --- JOB SWITCHER DROPDOWN START --- */}
+                    <div className="relative">
                         <div
                             onClick={() => setIsJobSwitcherOpen(!isJobSwitcherOpen)}
-                            className="cursor-pointer flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 py-1 px-2 rounded-lg transition-colors"
+                            className="cursor-pointer group"
                         >
-                            <div>
-                                <h1 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    {job.title}
-                                    <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isJobSwitcherOpen ? 'rotate-180' : ''}`} />
-                                </h1>
-                                <span className="text-xs text-gray-500">{job.department} • {job.location}</span>
-                            </div>
+                            <h1 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 group-hover:text-green-600 transition-colors">
+                                {job.title}
+                                <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isJobSwitcherOpen ? 'rotate-180' : ''}`} />
+                            </h1>
+                            <span className="text-xs text-gray-500">{job.department} • {job.location}</span>
                         </div>
 
                         {isJobSwitcherOpen && (
-                            <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                                <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                                    <div className="text-xs font-bold text-gray-400 uppercase px-3 py-2">Switch Job</div>
-                                    {allJobs.map((j) => (
-                                        <button
-                                            key={j.id}
-                                            onClick={() => {
-                                                onSwitchJob(j.id);
-                                                setIsJobSwitcherOpen(false);
-                                            }}
-                                            className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between group ${j.id === job.id ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200'}`}
-                                        >
-                                            <span className="truncate font-medium">{j.title}</span>
-                                            {j.id === job.id && <Check className="w-4 h-4" />}
-                                        </button>
-                                    ))}
+                            <>
+                                {/* Backdrop to close when clicking outside */}
+                                <div className="fixed inset-0 z-40" onClick={() => setIsJobSwitcherOpen(false)}></div>
+
+                                {/* Dropdown Menu */}
+                                <div className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden animate-in fade-in slide-in-from-top-2 z-50">
+                                    <div className="p-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                        <div className="text-xs font-bold text-gray-400 uppercase px-3 py-2">Switch Job</div>
+                                        {allJobs.map((j) => (
+                                            <button
+                                                key={j.id}
+                                                onClick={() => {
+                                                    onSwitchJob(j.id); // Using onSwitchJob to maintain parent state
+                                                    setIsJobSwitcherOpen(false);
+                                                }}
+                                                className={`w-full text-left px-3 py-2 rounded-lg flex items-center justify-between group ${j.id === job.id ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200'}`}
+                                            >
+                                                <span className="truncate font-medium">{j.title}</span>
+                                                {j.id === job.id && <div className="w-2 h-2 rounded-full bg-green-500"></div>}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="p-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-black/20">
-                                    <button onClick={onBack} className="w-full py-2 text-xs font-bold text-center text-gray-500 hover:text-gray-800 dark:hover:text-white">
-                                        Back to Dashboard
-                                    </button>
-                                </div>
-                            </div>
+                            </>
                         )}
                     </div>
-                    {/* ----------------------------- */}
+                    {/* --- JOB SWITCHER DROPDOWN END --- */}
                 </div>
 
                 {/* MODE SWITCHER (TABS) */}
@@ -305,41 +293,43 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
             </div>
 
             {/* Settings Modal */}
-            {isSettingsOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
-                                <Settings className="w-5 h-5" /> Job Settings
-                            </h3>
-                            <button onClick={() => setIsSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">✕</button>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            <div>
-                                <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-green-500" /> Auto-Close Date
-                                </label>
-                                <p className="text-xs text-gray-500 mb-3">Automatically close this job and stop accepting applications after this date.</p>
-                                <input
-                                    type="date"
-                                    value={closeDate}
-                                    onChange={(e) => setCloseDate(e.target.value)}
-                                    className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/50 outline-none transition-all dark:text-white"
-                                />
+            {
+                isSettingsOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="bg-white dark:bg-gray-800 w-full max-w-md rounded-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+                                <h3 className="font-bold text-lg text-gray-900 dark:text-white flex items-center gap-2">
+                                    <Settings className="w-5 h-5" /> Job Settings
+                                </h3>
+                                <button onClick={() => setIsSettingsOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white">✕</button>
                             </div>
+                            <div className="p-6 space-y-6">
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                        <Calendar className="w-4 h-4 text-green-500" /> Auto-Close Date
+                                    </label>
+                                    <p className="text-xs text-gray-500 mb-3">Automatically close this job and stop accepting applications after this date.</p>
+                                    <input
+                                        type="date"
+                                        value={closeDate}
+                                        onChange={(e) => setCloseDate(e.target.value)}
+                                        className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/50 outline-none transition-all dark:text-white"
+                                    />
+                                </div>
 
-                            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
-                                <p className="text-sm text-blue-800 dark:text-blue-200">
-                                    <strong>Tip:</strong> Setting an auto-close date helps manage candidate expectations and keeps your pipeline fresh.
-                                </p>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                                        <strong>Tip:</strong> Setting an auto-close date helps manage candidate expectations and keeps your pipeline fresh.
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                        <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex justify-end">
-                            <Button variant="primary" onClick={() => setIsSettingsOpen(false)}>Done</Button>
+                            <div className="p-4 border-t border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5 flex justify-end">
+                                <Button variant="primary" onClick={() => setIsSettingsOpen(false)}>Done</Button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
