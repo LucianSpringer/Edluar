@@ -128,4 +128,17 @@ export class ApplicationRepository {
              ORDER BY a.updated_at DESC, a.applied_at DESC`
         );
     }
+    /**
+     * Find all applications for a specific candidate (History)
+     */
+    static async findHistoryByCandidateId(candidateId: number): Promise<any[]> {
+        return this.getDB().all(
+            `SELECT a.*, j.title as job_title, j.department, j.location
+             FROM applications a
+             JOIN job_openings j ON a.job_id = j.id
+             WHERE a.candidate_id = ?
+             ORDER BY a.applied_at DESC`,
+            [candidateId]
+        );
+    }
 }

@@ -107,6 +107,7 @@ app.get('/api/notifications', NotificationController.getMine);
 app.patch('/api/notifications/:id/read', NotificationController.markRead);
 app.post('/api/applications', ApplicationController.create);
 app.get('/api/applications/job/:jobId', ApplicationController.getByJob);
+app.get('/api/candidates/:candidateId/history', ApplicationController.getCandidateHistory);
 
 // Review Routes (must be before :id routes to avoid conflicts)
 console.log('📝 Registering review routes...');
@@ -129,6 +130,7 @@ app.post('/api/interviews', InterviewController.create); // Generic create (e.g.
 app.post('/api/applications/:id/interviews', InterviewController.create);
 app.get('/api/interviews/confirm/:token', InterviewController.confirm);
 app.get('/api/interviews/upcoming', InterviewController.getUpcoming);
+app.delete('/api/interviews/:id', InterviewController.delete);
 
 // Activity Routes (must be before :id/stage to avoid conflicts)
 app.get('/api/applications/:id/activities', ApplicationController.getActivities);
@@ -137,6 +139,38 @@ app.get('/api/activities/scheduled', ApplicationController.getScheduledActivitie
 
 // Application stage update (after more specific routes)
 app.patch('/api/applications/:id/stage', ApplicationController.updateStage);
+
+// Report Routes
+import { ReportController } from './controllers/ReportController';
+app.get('/api/reports/overview', ReportController.getOverview);
+
+// Global Search Endpoint (Lightweight)
+app.get('/api/search', async (req: Request, res: Response) => {
+    const q = req.query.q as string;
+    if (!q || q.length < 2) return res.json([]);
+
+    try {
+        const { DatabaseManager } = require('./database/Database');
+        const db = DatabaseManager.getInstance();
+
+        // Parallel Search
+        const [jobs, candidates] = await Promise.all([
+            db.all(`SELECT id, title, department, 'job' as type FROM job_openings WHERE title LIKE ? LIMIT 5`, [`%${q}%`]),
+            db.all(`SELECT id, first_name, last_name, email, 'candidate' as type FROM candidates WHERE first_name LIKE ? OR last_name LIKE ? OR email LIKE ? LIMIT 5`, [`%${q}%`, `%${q}%`, `%${q}%`])
+        ]);
+
+        // Format candidates to have a 'name' property for consistency if needed, or handle in frontend
+        const formattedCandidates = candidates.map((c: any) => ({
+            ...c,
+            name: `${c.first_name} ${c.last_name}`
+        }));
+
+        res.json([...jobs, ...formattedCandidates]);
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
 
 // Seeding Logic
 import { UserRepository } from './repositories/UserRepository';

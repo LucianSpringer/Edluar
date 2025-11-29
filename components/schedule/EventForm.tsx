@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Clock, Calendar as CalendarIcon, AlignLeft, Type, FileText, ChevronDown } from 'lucide-react';
+import { X, Clock, Calendar as CalendarIcon, AlignLeft, Type, FileText, ChevronDown, Trash2 } from 'lucide-react';
 import { EventType } from './types';
 import { format, addMinutes, parse } from 'date-fns';
 import { defaultEventTemplates } from '../../src/data/eventTemplates';
@@ -13,6 +13,7 @@ interface EventFormProps {
     onMetaChange: (meta: { title: string; type: EventType; description: string }) => void;
     onSave: () => void;
     onCancel: () => void;
+    onDelete?: () => void;
     isSaving: boolean;
 }
 
@@ -23,12 +24,16 @@ export const EventForm: React.FC<EventFormProps> = ({
     onMetaChange,
     onSave,
     onCancel,
+    onDelete,
     isSaving
 }) => {
     const { user } = useAuth();
     const [showTemplates, setShowTemplates] = useState(false);
 
+    // ... (rest of the component logic remains the same)
+
     const handleTemplateSelect = (templateId: string) => {
+        // ... (template selection logic)
         const template = defaultEventTemplates.find(t => t.id === templateId);
         if (!template) return;
 
@@ -244,6 +249,17 @@ export const EventForm: React.FC<EventFormProps> = ({
             </div>
 
             <div className="p-6 border-t border-gray-200 dark:border-white/5 flex gap-3 bg-gray-50 dark:bg-black/20">
+                {/* Delete Button (Only shows if onDelete exists) */}
+                {onDelete && (
+                    <button
+                        onClick={onDelete}
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg transition-colors"
+                        title="Cancel Interview"
+                    >
+                        <Trash2 className="w-5 h-5" />
+                    </button>
+                )}
+
                 <button
                     onClick={onCancel}
                     className="flex-1 px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-white/5 transition-colors"

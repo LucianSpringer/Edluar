@@ -148,4 +148,19 @@ export class InterviewRepository {
 
         return interviews;
     }
+    /**
+     * Find by ID (Needed for logging before delete)
+     */
+    static async findById(id: number): Promise<Interview | undefined> {
+        const db = DatabaseManager.getInstance();
+        return db.get('SELECT * FROM interviews WHERE id = ?', [id]);
+    }
+
+    /**
+     * Delete interview
+     */
+    static async delete(id: number): Promise<void> {
+        const db = DatabaseManager.getInstance();
+        await db.run('DELETE FROM interviews WHERE id = ?', [id]);
+    }
 }

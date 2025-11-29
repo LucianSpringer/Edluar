@@ -62,31 +62,43 @@ export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
         'hired': 'Hired'
     };
 
+    const [searchQuery, setSearchQuery] = React.useState('');
+
+    // ... (fetchCandidates logic)
+
+    // Filter Logic
+    const filteredCandidates = candidates.filter(c =>
+        c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Update Groups to use 'filteredCandidates'
     const candidateGroups = [
         {
             title: "New",
-            count: candidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied').length,
-            candidates: candidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied')
+            count: filteredCandidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied').length,
+            candidates: filteredCandidates.filter(c => statusMap[c.stage] === 'New' || c.stage === 'applied')
         },
         {
             title: "Screening",
-            count: candidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen').length,
-            candidates: candidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen')
+            count: filteredCandidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen').length,
+            candidates: filteredCandidates.filter(c => statusMap[c.stage] === 'Screening' || c.stage === 'phone_screen')
         },
         {
             title: "Interview",
-            count: candidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview').length,
-            candidates: candidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview')
+            count: filteredCandidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview').length,
+            candidates: filteredCandidates.filter(c => statusMap[c.stage] === 'Interview' || c.stage === 'interview')
         },
         {
             title: "Offer",
-            count: candidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer').length,
-            candidates: candidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer')
+            count: filteredCandidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer').length,
+            candidates: filteredCandidates.filter(c => statusMap[c.stage] === 'Offer' || c.stage === 'offer')
         },
         {
             title: "Hired",
-            count: candidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired').length,
-            candidates: candidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired')
+            count: filteredCandidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired').length,
+            candidates: filteredCandidates.filter(c => statusMap[c.stage] === 'Hired' || c.stage === 'hired')
         }
     ];
 
@@ -100,6 +112,8 @@ export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
                         <input
                             type="text"
                             placeholder="Search candidates..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-9 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-green-500 w-64 dark:text-white"
                         />
                     </div>

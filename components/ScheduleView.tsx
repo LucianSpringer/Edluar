@@ -20,6 +20,7 @@ export const ScheduleView = () => {
         description: ''
     });
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
     const fetchEvents = useCallback(async () => {
         try {
@@ -54,6 +55,7 @@ export const ScheduleView = () => {
     }, [fetchEvents]);
 
     const handleSlotClick = (date: Date) => {
+        setSelectedEventId(null); // Reset ID (New Event)
         // Default to 1 hour duration
         setDraftTime({
             start: date,
@@ -68,6 +70,7 @@ export const ScheduleView = () => {
     };
 
     const handleEventClick = (event: CalendarEvent) => {
+        setSelectedEventId(event.id); // Capture ID
         // Edit mode
         setDraftTime({
             start: new Date(event.start), // Convert UTC string to Date object (handled by new Date() automatically if ISO)
@@ -79,6 +82,28 @@ export const ScheduleView = () => {
             type: event.type,
             description: event.description || ''
         });
+    };
+
+    const handleDelete = async () => {
+        if (!selectedEventId) return;
+        if (!confirm("Are you sure you want to cancel this interview?")) return;
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/interviews/${selectedEventId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                await fetchEvents();
+                setDraftTime(null); // Close panel
+                setSelectedEventId(null);
+                alert("✅ Event cancelled successfully");
+            } else {
+                alert("Failed to delete event");
+            }
+        } catch (err) {
+            console.error("Failed to delete", err);
+            alert("Error deleting event");
+        }
     };
 
     const { user } = useAuth();
@@ -117,6 +142,7 @@ export const ScheduleView = () => {
             if (response.ok) {
                 await fetchEvents();
                 setDraftTime(null); // Close form
+                setSelectedEventId(null);
                 alert("✅ Event saved successfully!");
             } else {
                 const errorData = await response.json();
@@ -160,7 +186,8 @@ export const ScheduleView = () => {
                             onTimeChange={setDraftTime}
                             onMetaChange={setDraftMeta}
                             onSave={handleSave}
-                            onCancel={() => setDraftTime(null)}
+                            onCancel={() => { setDraftTime(null); setSelectedEventId(null); }}
+                            onDelete={selectedEventId ? handleDelete : undefined}
                             isSaving={isSaving}
                         />
                     )}

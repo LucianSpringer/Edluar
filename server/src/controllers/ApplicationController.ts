@@ -247,4 +247,17 @@ export class ApplicationController {
             res.status(500).json({ error: 'Failed to fetch applications' });
         }
     }
+    /**
+     * Get candidate application history
+     */
+    static async getCandidateHistory(req: Request, res: Response) {
+        try {
+            const { candidateId } = req.params;
+            const history = await ApplicationRepository.findHistoryByCandidateId(Number(candidateId));
+            res.json(history);
+        } catch (error) {
+            console.error('Error fetching candidate history:', error);
+            res.status(500).json({ error: 'Failed to fetch history' });
+        }
+    }
 }

@@ -127,4 +127,32 @@ END:VCALENDAR`;
             res.status(500).json({ error: 'Failed to fetch upcoming interviews' });
         }
     }
+    /**
+     * Cancel/Delete an interview
+     * DELETE /api/interviews/:id
+     */
+    static async delete(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const interviewId = Number(id);
+
+            // 1. Fetch for "Mock Notification"
+            const interview = await InterviewRepository.findById(interviewId);
+            if (!interview) return res.status(404).json({ error: "Interview not found" });
+
+            // Mock Email Log
+            console.log("--- MOCK CANCELLATION EMAIL SENT ---");
+            console.log(`To: Attendees`);
+            console.log(`Subject: CANCELED: ${interview.title}`);
+            console.log("------------------------------------");
+
+            // 2. Delete
+            await InterviewRepository.delete(interviewId);
+
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Error deleting interview:', error);
+            res.status(500).json({ error: 'Failed to delete interview' });
+        }
+    }
 }

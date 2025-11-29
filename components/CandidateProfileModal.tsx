@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, Calendar, MapPin, Tag, Star, FileText } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, MapPin, Tag, Star, FileText, AlertTriangle, ChevronRight } from 'lucide-react';
 import { StarRating } from './StarRating';
 import { Review, ReviewStats } from '../types/review';
 import { ScorecardModal } from './ScorecardModal';
@@ -29,12 +29,28 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [scorecards, setScorecards] = useState<any[]>([]);
     const [scorecardAverages, setScorecardAverages] = useState<{ skills_avg: number; culture_avg: number; count: number }>({ skills_avg: 0, culture_avg: 0, count: 0 });
+    const [history, setHistory] = useState<any[]>([]);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
 
     useEffect(() => {
         fetchReviews();
         fetchActivities();
         fetchScorecards();
+        fetchHistory();
     }, [application.id]);
+
+    const fetchHistory = async () => {
+        if (!application?.candidate_id) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/candidates/${application.candidate_id}/history`);
+            if (res.ok) {
+                const data = await res.json();
+                setHistory(data);
+            }
+        } catch (e) {
+            console.error("History fetch failed", e);
+        }
+    };
 
     const fetchReviews = async () => {
         try {
@@ -289,6 +305,24 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                         </button>
                     </div>
                 </div>
+
+                {/* Repeat Candidate Warning Banner */}
+                {history.filter(h => h.id !== application.id).length > 0 && (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-100 dark:border-yellow-900/30 px-6 py-3 flex items-center justify-between animate-fade-in">
+                        <div className="flex items-center gap-3 text-yellow-800 dark:text-yellow-200">
+                            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                            <span className="text-sm font-medium">
+                                <span className="font-bold">Repeat Candidate:</span> This applicant has applied to {history.filter(h => h.id !== application.id).length} other position{history.filter(h => h.id !== application.id).length > 1 ? 's' : ''}.
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setShowHistoryModal(true)}
+                            className="text-xs font-bold uppercase tracking-wider text-yellow-700 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300 flex items-center gap-1"
+                        >
+                            View History <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
 
                 {/* Tab Navigation */}
                 <div className="border-b border-gray-200 dark:border-white/10 px-6">
@@ -602,6 +636,45 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                 onSubmit={handleScheduleSubmit}
                 candidateName={`${application.first_name} ${application.last_name}`}
             />
+
+            {/* History Modal Overlay */}
+            {showHistoryModal && (
+                <div className="absolute inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-edluar-surface w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-scale-in">
+                        <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center bg-gray-50 dark:bg-white/5">
+                            <h3 className="font-bold text-lg text-gray-800 dark:text-white">Application History</h3>
+                            <button onClick={() => setShowHistoryModal(false)}><X className="w-5 h-5 text-gray-500" /></button>
+                        </div>
+                        <div className="max-h-[60vh] overflow-y-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-white/5">
+                                    <tr>
+                                        <th className="px-6 py-3">Role</th>
+                                        <th className="px-6 py-3">Date</th>
+                                        <th className="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-white/5">
+                                    {history.map((h) => (
+                                        <tr key={h.id} className={h.id === application.id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}>
+                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">
+                                                {h.job_title}
+                                                {h.id === application.id && <span className="ml-2 text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Current</span>}
+                                            </td>
+                                            <td className="px-6 py-4 text-gray-500">{new Date(h.applied_at).toLocaleDateString()}</td>
+                                            <td className="px-6 py-4">
+                                                <span className="px-2 py-1 rounded text-xs font-bold uppercase bg-gray-100 text-gray-600 dark:bg-white/10 dark:text-gray-300">
+                                                    {h.status.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

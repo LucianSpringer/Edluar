@@ -604,6 +604,7 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
 // 2. JOBS LIST VIEW
 const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () => void; onEdit: (id: number) => void; onNavigate: (page: string, params?: any) => void }) => {
    const [jobs, setJobs] = useState<any[]>([]);
+   const [searchQuery, setSearchQuery] = useState('');
 
    useEffect(() => {
       fetch('http://localhost:5000/api/jobs')
@@ -637,19 +638,39 @@ const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () =
       return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onSwitchJob={setEditingJobId} />;
    }
 
+   // Filter Logic
+   const filteredJobs = jobs.filter(job =>
+      job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.department?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.location?.toLowerCase().includes(searchQuery.toLowerCase())
+   );
+
    return (
       <div className="p-8 max-w-7xl mx-auto animate-fade-in">
          <div className="flex justify-between items-center mb-8">
             <h2 className="text-2xl font-serif font-bold text-gray-900 dark:text-white">Jobs</h2>
             <Button variant="primary" size="sm" onClick={onOpenCreate}><Plus className="w-4 h-4 mr-2" /> Create Job</Button>
          </div>
+
+         {/* Search Bar */}
+         <div className="relative mb-6">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+               type="text"
+               placeholder="Search jobs by title, department..."
+               value={searchQuery}
+               onChange={(e) => setSearchQuery(e.target.value)}
+               className="w-full pl-10 pr-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:ring-2 focus:ring-edluar-moss"
+            />
+         </div>
+
          <div className="grid gap-4">
-            {jobs.length === 0 && (
+            {filteredJobs.length === 0 && (
                <div className="text-center py-12 text-gray-500">
-                  No active jobs found. Start by creating one!
+                  {jobs.length === 0 ? "No active jobs found. Start by creating one!" : "No jobs match your search."}
                </div>
             )}
-            {jobs.map((job) => (
+            {filteredJobs.map((job) => (
                <div
                   key={job.id}
                   onClick={() => setEditingJobId(job.id)}
@@ -698,7 +719,7 @@ const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () =
 
 
 // 3. ATS / PIPELINE (The Candidate Portal) - WITH REAL DATA & DRAG-AND-DROP
-const ATSView = () => {
+const ATSView = ({ openCandidateId }: { openCandidateId?: number | null }) => {
    const { user } = useAuth();
    const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
    const [applications, setApplications] = useState<any>({ applied: [], phone_screen: [], interview: [], offer: [], hired: [] });
@@ -707,6 +728,25 @@ const ATSView = () => {
    const [automationPrompt, setAutomationPrompt] = useState<{ show: boolean; action: string | null; applicationId: number | null }>({ show: false, action: null, applicationId: null });
    const [activeCandidate, setActiveCandidate] = useState<any | null>(null);
    const [ratings, setRatings] = useState<Map<number, { average: number; count: number }>>(new Map());
+   const [candidateSearch, setCandidateSearch] = useState('');
+
+   // Auto-open logic
+   useEffect(() => {
+      if (openCandidateId && Object.values(applications).flat().length > 0) {
+         const app = Object.values(applications).flat().find((a: any) => a.candidate_id === openCandidateId);
+         if (app) setSelectedApplication(app);
+      }
+   }, [openCandidateId, applications]);
+
+   // Filter Logic
+   const filterApps = (apps: any[]) => {
+      if (!candidateSearch) return apps;
+      const lowerQ = candidateSearch.toLowerCase();
+      return apps.filter(app =>
+         (app.first_name + ' ' + app.last_name).toLowerCase().includes(lowerQ) ||
+         app.email.toLowerCase().includes(lowerQ)
+      );
+   };
 
    // Fetch jobs and applications on mount
    useEffect(() => {
@@ -796,11 +836,11 @@ const ATSView = () => {
    };
 
    const columns = [
-      { id: 'applied', title: 'New Applied', color: 'bg-blue-500', data: applications.applied },
-      { id: 'phone_screen', title: 'Phone Screen', color: 'bg-purple-500', data: applications.phone_screen },
-      { id: 'interview', title: 'Interviewing', color: 'bg-yellow-500', data: applications.interview },
-      { id: 'offer', title: 'Offer Sent', color: 'bg-green-500', data: applications.offer },
-      { id: 'hired', title: 'Hired', color: 'bg-edluar-moss', data: applications.hired },
+      { id: 'applied', title: 'New Applied', color: 'bg-blue-500', data: filterApps(applications.applied) },
+      { id: 'phone_screen', title: 'Phone Screen', color: 'bg-purple-500', data: filterApps(applications.phone_screen) },
+      { id: 'interview', title: 'Interviewing', color: 'bg-yellow-500', data: filterApps(applications.interview) },
+      { id: 'offer', title: 'Offer Sent', color: 'bg-green-500', data: filterApps(applications.offer) },
+      { id: 'hired', title: 'Hired', color: 'bg-edluar-moss', data: filterApps(applications.hired) },
    ];
 
    // Helper: Find which stage an application belongs to
@@ -893,6 +933,16 @@ const ATSView = () => {
                   <ChevronDown className="w-4 h-4 text-gray-900 dark:text-white absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" />
                </div>
                <div className="flex gap-2">
+                  <div className="flex items-center gap-2 bg-gray-100 dark:bg-white/5 px-3 py-1.5 rounded-lg mr-2">
+                     <Search className="w-4 h-4 text-gray-400" />
+                     <input
+                        type="text"
+                        placeholder="Filter candidates..."
+                        value={candidateSearch}
+                        onChange={(e) => setCandidateSearch(e.target.value)}
+                        className="bg-transparent border-none outline-none text-sm w-48 text-gray-900 dark:text-white placeholder-gray-400"
+                     />
+                  </div>
                   <Button variant="primary" size="sm"><Plus className="w-4 h-4 mr-2" /> Add Candidate</Button>
                </div>
             </div>
@@ -1758,243 +1808,8 @@ const InboxView = () => {
 // 5. SCHEDULE VIEW - WITH REAL SCHEDULED ACTIVITIES
 
 
-// 6. REPORTS VIEW - WITH REAL APPLICATION ANALYTICS
-const ReportsView = () => {
-   const [applications, setApplications] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
-
-   useEffect(() => {
-      fetchAllApplications();
-   }, []);
-
-   const fetchAllApplications = async () => {
-      try {
-         setLoading(true);
-         // Fetch from our test job (in production, aggregate from all jobs)
-         const response = await fetch('http://localhost:5000/api/applications/job/2');
-         const data = await response.json();
-
-         // Flatten all applications
-         const allApps = Object.values(data).flat();
-         setApplications(allApps);
-         setLoading(false);
-      } catch (error) {
-         console.error("Failed to fetch applications:", error);
-         setLoading(false);
-      }
-   };
-
-   // Calculate metrics from real data
-   const calculateMetrics = () => {
-      if (applications.length === 0) {
-         return {
-            timeToHire: 0,
-            acceptanceRate: 0,
-            activePipeline: 0,
-            sourceQuality: [],
-            funnel: []
-         };
-      }
-
-      // Count by stage
-      const stageCount = {
-         applied: applications.filter(a => a.status === 'applied').length,
-         phone_screen: applications.filter(a => a.status === 'phone_screen').length,
-         interview: applications.filter(a => a.status === 'interview').length,
-         offer: applications.filter(a => a.status === 'offer').length,
-         hired: applications.filter(a => a.status === 'hired').length,
-      };
-
-      // Build funnel with drop rates
-      const totalApplied = stageCount.applied + stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired;
-      const funnel = [
-         { stage: "Applied", count: totalApplied, drop: 0 },
-         {
-            stage: "Phone Screen",
-            count: stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired,
-            drop: totalApplied > 0 ? Math.round((stageCount.applied / totalApplied) * 100) : 0
-         },
-         {
-            stage: "Interview",
-            count: stageCount.interview + stageCount.offer + stageCount.hired,
-            drop: (stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired) > 0
-               ? Math.round((stageCount.phone_screen / (stageCount.phone_screen + stageCount.interview + stageCount.offer + stageCount.hired)) * 100)
-               : 0
-         },
-         {
-            stage: "Offer",
-            count: stageCount.offer + stageCount.hired,
-            drop: (stageCount.interview + stageCount.offer + stageCount.hired) > 0
-               ? Math.round((stageCount.interview / (stageCount.interview + stageCount.offer + stageCount.hired)) * 100)
-               : 0
-         },
-         {
-            stage: "Hired",
-            count: stageCount.hired,
-            drop: (stageCount.offer + stageCount.hired) > 0
-               ? Math.round((stageCount.offer / (stageCount.offer + stageCount.hired)) * 100)
-               : 0
-         },
-      ];
-
-      // Source quality (count by source)
-      const sourceCounts: any = {};
-      applications.forEach(app => {
-         const source = app.source || 'Direct';
-         sourceCounts[source] = (sourceCounts[source] || 0) + 1;
-      });
-
-      const sourceQuality = Object.entries(sourceCounts).map(([source, count]: any) => ({
-         source,
-         score: Math.min(100, count * 20), // Simple score based on volume
-         color: source === 'LinkedIn' ? 'bg-[#0077b5]' :
-            source === 'Referral' ? 'bg-emerald-500' :
-               source === 'Indeed' ? 'bg-blue-400' : 'bg-edluar-moss'
-      }));
-
-      return {
-         timeToHire: 18, // Would need created_at vs hired_at calculation
-         acceptanceRate: stageCount.hired > 0 && (stageCount.offer + stageCount.hired) > 0
-            ? Math.round((stageCount.hired / (stageCount.offer + stageCount.hired)) * 100)
-            : 0,
-         activePipeline: applications.length - stageCount.hired,
-         sourceQuality,
-         funnel
-      };
-   };
-
-   const metrics = calculateMetrics();
-
-   if (loading) {
-      return (
-         <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-               <div className="animate-spin w-8 h-8 border-4 border-edluar-moss border-t-transparent rounded-full mx-auto mb-4"></div>
-               <p className="text-gray-500">Loading analytics...</p>
-            </div>
-         </div>
-      );
-   }
-
-   return (
-      <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0B100D] animate-fade-in overflow-y-auto p-8">
-         <header className="mb-10">
-            <h1 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream mb-2">Recruitment Analytics</h1>
-            <p className="text-edluar-dark/60 dark:text-edluar-cream/60">Real-time insights from your hiring pipeline</p>
-         </header>
-
-         {applications.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-               <div className="text-center">
-                  <TrendingUp className="w-20 h-20 mx-auto mb-4 text-gray-300 opacity-50" />
-                  <p className="text-gray-400">No application data yet</p>
-                  <p className="text-sm text-gray-400 mt-2">Analytics will appear once you have candidates in your pipeline</p>
-               </div>
-            </div>
-         ) : (
-            <>
-               {/* Top Level Metrics */}
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Time to Hire</h3>
-                        <Clock className="w-5 h-5 text-edluar-moss" />
-                     </div>
-                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.timeToHire}</span>
-                        <span className="text-sm text-gray-500">days avg</span>
-                     </div>
-                     <div className="mt-4 text-xs text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded inline-block">
-                        Industry Average
-                     </div>
-                  </div>
-
-                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Offer Acceptance</h3>
-                        <CheckCircle2 className="w-5 h-5 text-blue-500" />
-                     </div>
-                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.acceptanceRate}%</span>
-                     </div>
-                     <div className="mt-4 w-full bg-gray-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-blue-500 h-full rounded-full" style={{ width: `${metrics.acceptanceRate}%` }}></div>
-                     </div>
-                  </div>
-
-                  <div className="p-6 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-                     <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Active Pipeline</h3>
-                        <Users className="w-5 h-5 text-orange-400" />
-                     </div>
-                     <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{metrics.activePipeline}</span>
-                        <span className="text-sm text-gray-500">candidates</span>
-                     </div>
-                     <p className="mt-4 text-xs text-gray-400">Total: {applications.length} applications</p>
-                  </div>
-               </div>
-
-               <div className="grid lg:grid-cols-2 gap-8">
-                  {/* Pipeline Funnel */}
-                  <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Pipeline Funnel</h3>
-                     <div className="space-y-4">
-                        {metrics.funnel.map((step, i) => (
-                           <div key={step.stage} className="relative group">
-                              <div className="flex justify-between text-sm mb-1">
-                                 <span className="font-medium text-gray-700 dark:text-gray-300">{step.stage}</span>
-                                 <span className="text-gray-500">{step.count}</span>
-                              </div>
-                              <div className="w-full bg-gray-100 dark:bg-white/5 h-10 rounded-lg relative overflow-hidden">
-                                 <div
-                                    className={`h-full rounded-lg transition-all duration-1000 ease-out ${i === 4 ? 'bg-edluar-moss' : 'bg-edluar-pale dark:bg-edluar-moss/40'}`}
-                                    style={{ width: metrics.funnel[0].count > 0 ? `${(step.count / metrics.funnel[0].count) * 100}%` : '0%' }}
-                                 ></div>
-                                 {i > 0 && step.drop > 0 && (
-                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-red-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                       -{step.drop}% drop
-                                    </div>
-                                 )}
-                              </div>
-                           </div>
-                        ))}
-                     </div>
-                  </div>
-
-                  {/* Source Quality */}
-                  <div className="p-8 bg-white dark:bg-white/5 rounded-2xl border border-edluar-pale dark:border-white/10 shadow-sm">
-                     <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-6">Application Sources</h3>
-                     {metrics.sourceQuality.length === 0 ? (
-                        <div className="h-64 flex items-center justify-center text-gray-400">
-                           <p>No source data available</p>
-                        </div>
-                     ) : (
-                        <div className="h-64 flex items-end justify-between gap-4 px-2">
-                           {metrics.sourceQuality.map((src: any) => (
-                              <div key={src.source} className="flex flex-col items-center gap-2 w-full group">
-                                 <div className="relative w-full flex justify-center">
-                                    <div
-                                       className={`w-full max-w-[60px] rounded-t-lg transition-all duration-700 ${src.color} opacity-80 group-hover:opacity-100`}
-                                       style={{ height: `${src.score * 2}px` }}
-                                    >
-                                       <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                          {src.score}/100
-                                       </div>
-                                    </div>
-                                 </div>
-                                 <span className="text-xs font-bold text-gray-500 dark:text-gray-400">{src.source}</span>
-                              </div>
-                           ))}
-                        </div>
-                     )}
-                  </div>
-               </div>
-            </>
-         )}
-      </div>
-   );
-};
+// 6. REPORTS VIEW - REPLACED BY ReportsPage.tsx
+import { ReportsPage } from '../src/pages/ReportsPage';
 
 // --- MAIN CONTROLLER ---
 interface DashboardPageProps {
@@ -2009,6 +1824,23 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
    const [pendingJobData, setPendingJobData] = useState<any>(null);
+
+   // --- GLOBAL SEARCH STATE ---
+   const [globalQuery, setGlobalQuery] = useState('');
+   const [globalResults, setGlobalResults] = useState<any[]>([]);
+   const [isSearchOpen, setIsSearchOpen] = useState(false);
+   const [openCandidateId, setOpenCandidateId] = useState<number | null>(null);
+
+   useEffect(() => {
+      const timer = setTimeout(async () => {
+         if (globalQuery.length < 2) return setGlobalResults([]);
+         try {
+            const res = await fetch(`http://localhost:5000/api/search?q=${globalQuery}`);
+            if (res.ok) setGlobalResults(await res.json());
+         } catch (e) { console.error("Search failed", e); }
+      }, 300);
+      return () => clearTimeout(timer);
+   }, [globalQuery]);
 
    // NOTIFICATIONS STATE
    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -2195,9 +2027,55 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
                   {activeView === 'jobs' ? 'Applicant Tracking' : activeView === 'career_site' ? 'Career Site OS' : activeView}
                </h2>
                <div className="flex items-center gap-4">
-                  <div className="relative">
+                  {/* GLOBAL SEARCH UI */}
+                  <div className="relative z-50">
                      <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-edluar-dark/40" />
-                     <input type="text" placeholder="Search anything..." className="pl-9 pr-4 py-2 bg-white dark:bg-white/5 border border-edluar-pale dark:border-white/10 rounded-full text-sm focus:ring-2 focus:ring-edluar-moss/50 w-64 transition-all" />
+                     <input
+                        type="text"
+                        placeholder="Search jobs or candidates..."
+                        className="pl-9 pr-4 py-2 bg-white dark:bg-white/5 border border-edluar-pale dark:border-white/10 rounded-full text-sm focus:ring-2 focus:ring-edluar-moss/50 w-64 transition-all"
+                        value={globalQuery}
+                        onChange={(e) => setGlobalQuery(e.target.value)}
+                        onFocus={() => setIsSearchOpen(true)}
+                        onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
+                     />
+
+                     {/* DROPDOWN RESULTS */}
+                     {isSearchOpen && globalResults.length > 0 && (
+                        <div className="absolute top-full right-0 mt-2 w-96 bg-white dark:bg-edluar-surface rounded-xl shadow-xl border border-gray-100 dark:border-white/10 overflow-hidden max-h-96 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                           <div className="p-2">
+                              {globalResults.map((result, idx) => (
+                                 <button
+                                    key={`${result.type}-${result.id}`}
+                                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center gap-4 rounded-lg group"
+                                    onClick={() => {
+                                       if (result.type === 'job') {
+                                          onNavigate('job-editor', { jobId: result.id });
+                                       } else {
+                                          setActiveView('candidates');
+                                          setOpenCandidateId(result.id);
+                                       }
+                                       setIsSearchOpen(false);
+                                       setGlobalQuery('');
+                                    }}
+                                 >
+                                    <div className={`p-2 rounded-lg shrink-0 ${result.type === 'job' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'}`}>
+                                       {result.type === 'job' ? <Briefcase className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                       <p className="font-bold text-gray-900 dark:text-white truncate">
+                                          {result.type === 'job' ? result.title : result.name}
+                                       </p>
+                                       <p className="text-xs text-gray-500 truncate">
+                                          {result.type === 'job' ? result.department : result.email}
+                                       </p>
+                                    </div>
+                                    <div className="text-xs text-gray-400 group-hover:text-edluar-moss">Go</div>
+                                 </button>
+                              ))}
+                           </div>
+                        </div>
+                     )}
                   </div>
 
                   {/* NOTIFICATIONS */}
@@ -2255,10 +2133,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
             <div className="flex-1 overflow-auto">
                {activeView === 'overview' && <OverviewView user={user} onOpenCreate={() => setIsJobModalOpen(true)} />}
                {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} onNavigate={onNavigate} />}
-               {activeView === 'candidates' && <ATSView />}
+               {activeView === 'candidates' && <ATSView openCandidateId={openCandidateId} />}
                {activeView === 'career_site' && <CareerSiteView pendingJobData={pendingJobData} onPublish={handleJobPublished} />}
                {activeView === 'calendar' && <ScheduleView />}
-               {activeView === 'reports' && <ReportsView />}
+               {activeView === 'reports' && <ReportsPage />}
                {activeView === 'inbox' && <InboxView />}
                {activeView !== 'overview' && activeView !== 'jobs' && activeView !== 'candidates' && activeView !== 'career_site' && activeView !== 'calendar' && activeView !== 'reports' && activeView !== 'inbox' && activeView !== 'settings' && (
                   <div className="flex flex-col items-center justify-center h-full text-edluar-dark/40">
