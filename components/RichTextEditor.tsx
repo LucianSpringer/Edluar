@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { Bold, Italic, List, ListOrdered } from 'lucide-react';
@@ -26,13 +26,20 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange,
         content: value,
         editorProps: {
             attributes: {
-                class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[120px] text-sm text-gray-700 dark:text-gray-200 p-3',
+                class: 'prose dark:prose-invert max-w-none focus:outline-none min-h-[120px] text-sm text-gray-700 dark:text-gray-200 p-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5',
             },
         },
         onUpdate: ({ editor }) => {
             onChange(editor.getHTML());
         },
     });
+
+    // Watch for external changes (like AI Drafts) and update editor
+    useEffect(() => {
+        if (editor && value !== editor.getHTML()) {
+            editor.commands.setContent(value);
+        }
+    }, [value, editor]);
 
     if (!editor) {
         return null;

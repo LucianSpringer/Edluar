@@ -53,7 +53,8 @@ import {
    Mail,
 
    Trash2,
-   Wand2
+   Wand2,
+   AlertCircle
 } from 'lucide-react';
 import { generateEmailDraft } from '../services/geminiService';
 import { RichTextEditor } from './RichTextEditor';
@@ -432,11 +433,119 @@ const columns: Column[] = [
 
 // --- SUB-COMPONENTS ---
 
+// --- 1.5 TODOS VIEW (Dedicated Module)
+const TodosView = ({ todos, onRefresh }: { todos: any[], onRefresh: () => void }) => {
+   const [isModalOpen, setIsModalOpen] = useState(false);
+
+   const isPastDue = (dueDate: string) => {
+      if (!dueDate) return false;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return new Date(dueDate) < today;
+   };
+
+   const isToday = (dueDate: string) => {
+      if (!dueDate) return false;
+      const date = new Date(dueDate);
+      const today = new Date();
+      return date.toDateString() === today.toDateString();
+   };
+
+   const pendingTodos = todos.filter(t => t.status === 'pending');
+
+   const overdueTasks = pendingTodos.filter(t => isPastDue(t.due_date));
+   const todayTasks = pendingTodos.filter(t => isToday(t.due_date));
+   const upcomingTasks = pendingTodos.filter(t => !isPastDue(t.due_date) && !isToday(t.due_date));
+
+   const handleComplete = async (id: number) => {
+      try {
+         await fetch(`http://localhost:5000/api/todos/${id}/complete`, { method: 'PATCH' });
+         onRefresh();
+      } catch (e) { console.error(e); }
+   };
+
+   const TaskCard = ({ task }: { task: any }) => (
+      <div className="bg-white dark:bg-white/5 p-4 rounded-xl border border-gray-200 dark:border-white/10 shadow-sm hover:shadow-md transition-all group animate-fade-in">
+         <div className="flex items-start gap-3">
+            <button
+               onClick={() => handleComplete(task.id)}
+               className="mt-1 w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 hover:border-edluar-moss hover:bg-edluar-moss/10 transition-all flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+               <p className="font-medium text-gray-900 dark:text-white truncate">{task.task}</p>
+               <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-gray-500">
+                  {task.candidate_name && (
+                     <span className="flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+                        <User className="w-3 h-3" /> {task.candidate_name}
+                     </span>
+                  )}
+                  {task.due_date && (
+                     <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {new Date(task.due_date).toLocaleDateString()}
+                     </span>
+                  )}
+               </div>
+            </div>
+         </div>
+      </div>
+   );
+
+   return (
+      <div className="p-8 h-full flex flex-col bg-gray-50 dark:bg-[#0B100D] animate-fade-in">
+         <div className="flex justify-between items-center mb-8">
+            <div>
+               <h1 className="text-3xl font-serif font-bold text-gray-900 dark:text-white">My Tasks</h1>
+               <p className="text-gray-500 mt-1">Manage your recruiting priorities</p>
+            </div>
+            <Button onClick={() => setIsModalOpen(true)}><Plus className="w-4 h-4 mr-2" /> Add Task</Button>
+         </div>
+
+         <div className="grid grid-cols-3 gap-6 flex-1 overflow-hidden min-h-0">
+            {/* Overdue */}
+            <div className="flex flex-col h-full bg-red-50/30 dark:bg-red-900/5 rounded-2xl p-4 border border-red-100 dark:border-red-900/20">
+               <div className="flex items-center gap-2 mb-4 text-red-600 font-bold">
+                  <AlertCircle className="w-5 h-5" />
+                  Overdue <span className="bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full text-xs">{overdueTasks.length}</span>
+               </div>
+               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                  {overdueTasks.map(t => <TaskCard key={t.id} task={t} />)}
+               </div>
+            </div>
+
+            {/* Today */}
+            <div className="flex flex-col h-full bg-white dark:bg-white/5 rounded-2xl p-4 border border-gray-200 dark:border-white/10">
+               <div className="flex items-center gap-2 mb-4 text-edluar-moss font-bold">
+                  <Calendar className="w-5 h-5" />
+                  Today <span className="bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded-full text-xs text-edluar-moss">{todayTasks.length}</span>
+               </div>
+               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                  {todayTasks.map(t => <TaskCard key={t.id} task={t} />)}
+               </div>
+            </div>
+
+            {/* Upcoming */}
+            <div className="flex flex-col h-full bg-white dark:bg-white/5 rounded-2xl p-4 border border-gray-200 dark:border-white/10">
+               <div className="flex items-center gap-2 mb-4 text-gray-600 dark:text-gray-300 font-bold">
+                  <TrendingUp className="w-5 h-5" />
+                  Upcoming <span className="bg-gray-200 dark:bg-white/10 px-2 py-0.5 rounded-full text-xs">{upcomingTasks.length}</span>
+               </div>
+               <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
+                  {upcomingTasks.map(t => <TaskCard key={t.id} task={t} />)}
+               </div>
+            </div>
+         </div>
+
+         <CreateTodoModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onTaskCreated={onRefresh}
+         />
+      </div>
+   );
+};
+
 // 1. OVERVIEW (Personal Dashboard)
 const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => void }) => {
-   const [todos, setTodos] = React.useState<any[]>([]);
-   const [isTodoModalOpen, setIsTodoModalOpen] = React.useState(false);
-
    const templates = [
       { title: "No template", image: null, color: "bg-edluar-cream" },
       { title: "Future Forward", image: "https://images.unsplash.com/photo-1497366216548-37526070297c", color: "bg-purple-100" },
@@ -447,54 +556,6 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
    const getInitials = (name: string) => name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
    const displayName = user?.name || 'Guest User';
    const initials = user?.name ? getInitials(user.name) : 'GU';
-
-   // Fetch todos on mount
-   React.useEffect(() => {
-      fetchTodos();
-   }, []);
-
-   const fetchTodos = async () => {
-      try {
-         const response = await fetch('http://localhost:5000/api/todos?status=pending');
-         const data = await response.json();
-         setTodos(data.todos || []);
-      } catch (error) {
-         console.error('Failed to fetch todos:', error);
-      }
-   };
-
-   const handleCompleteTodo = async (id: number) => {
-      // Optimistic update
-      setTodos(prev => prev.filter(t => t.id !== id));
-
-      try {
-         await fetch(`http://localhost:5000/api/todos/${id}/complete`, {
-            method: 'PATCH'
-         });
-      } catch (error) {
-         console.error('Failed to complete todo:', error);
-         // Revert on error
-         fetchTodos();
-      }
-   };
-
-   const isPastDue = (dueDate: string) => {
-      if (!dueDate) return false;
-      return new Date(dueDate) < new Date();
-   };
-
-   const formatDate = (dateString: string) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      const today = new Date();
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      if (date.toDateString() === today.toDateString()) return 'Today';
-      if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-   };
 
    return (
       <div className="p-8 max-w-7xl mx-auto animate-fade-in-up">
@@ -514,93 +575,27 @@ const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => v
             </div>
          </header>
 
-         <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-10">
-               <section>
-                  <div className="flex items-center justify-between mb-6">
-                     <button onClick={onOpenCreate} className="text-xl font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2 hover:opacity-80 transition-opacity">
-                        <Plus className="w-5 h-5 text-edluar-moss" /> Start a new job post
-                     </button>
-                  </div>
-                  <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-                     {templates.map((t, i) => (
-                        <div key={i} onClick={onOpenCreate} className="cursor-pointer bg-white dark:bg-black/20 border border-edluar-pale/50 dark:border-white/5 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group">
-                           <div className={`h-32 ${t.color} bg-cover bg-center relative`} style={t.image ? { backgroundImage: `url(${t.image})` } : {}}>
-                              {t.image && (
-                                 <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40 group-hover:from-black/30 group-hover:to-black/50 transition-all" />
-                              )}
-                           </div>
-                           <h3 className="p-4 text-sm font-bold text-edluar-dark dark:text-edluar-cream">{t.title}</h3>
-                        </div>
-                     ))}
-                  </div>
-               </section>
-            </div>
-            <div className="space-y-8">
-               <div className="bg-edluar-cream/50 dark:bg-white/5 rounded-2xl p-6 border border-edluar-pale dark:border-white/10">
-                  <div className="flex items-center justify-between mb-6">
-                     <h2 className="font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2">
-                        <CheckSquare className="w-5 h-5 text-edluar-moss" /> To-do
-                     </h2>
-                     <button
-                        onClick={() => setIsTodoModalOpen(true)}
-                        className="p-1.5 hover:bg-edluar-pale/30 dark:hover:bg-white/5 rounded-lg transition-colors"
-                        title="Add task"
-                     >
-                        <Plus className="w-4 h-4 text-edluar-moss" />
-                     </button>
-                  </div>
-                  <div className="space-y-3">
-                     {todos.length === 0 ? (
-                        <div className="text-center py-8 text-edluar-dark/40 dark:text-edluar-cream/40 text-sm">
-                           No pending tasks
-                        </div>
-                     ) : (
-                        todos.map((todo) => (
-                           <div key={todo.id} className="bg-white dark:bg-black/20 p-3 rounded-xl border border-edluar-pale/50 dark:border-white/5 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                              <div className="flex items-start gap-3">
-                                 <input
-                                    type="checkbox"
-                                    onChange={() => handleCompleteTodo(todo.id)}
-                                    className="w-4 h-4 rounded border-gray-300 mt-1 cursor-pointer accent-edluar-moss"
-                                 />
-                                 <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-edluar-dark dark:text-edluar-cream">
-                                       {todo.task}
-                                    </div>
-                                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                                       {todo.candidate_name && (
-                                          <span className="text-xs text-blue-600 dark:text-blue-400 hover:underline cursor-pointer">
-                                             → {todo.candidate_name}
-                                          </span>
-                                       )}
-                                       {todo.job_title && (
-                                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                                             {todo.job_title}
-                                          </span>
-                                       )}
-                                       {todo.due_date && (
-                                          <span className={`text-xs ${isPastDue(todo.due_date) ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-500 dark:text-gray-400'}`}>
-                                             Due: {formatDate(todo.due_date)}
-                                          </span>
-                                       )}
-                                    </div>
-                                 </div>
-                              </div>
-                           </div>
-                        ))
-                     )}
-                  </div>
+         <div className="lg:col-span-3 space-y-10">
+            <section>
+               <div className="flex items-center justify-between mb-6">
+                  <button onClick={onOpenCreate} className="text-xl font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2 hover:opacity-80 transition-opacity">
+                     <Plus className="w-5 h-5 text-edluar-moss" /> Start a new job post
+                  </button>
                </div>
-            </div>
+               <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  {templates.map((t, i) => (
+                     <div key={i} onClick={onOpenCreate} className="cursor-pointer bg-white dark:bg-black/20 border border-edluar-pale/50 dark:border-white/5 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group">
+                        <div className={`h-32 ${t.color} bg-cover bg-center relative`} style={t.image ? { backgroundImage: `url(${t.image})` } : {}}>
+                           {t.image && (
+                              <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40 group-hover:from-black/30 group-hover:to-black/50 transition-all" />
+                           )}
+                        </div>
+                        <h3 className="p-4 text-sm font-bold text-edluar-dark dark:text-edluar-cream">{t.title}</h3>
+                     </div>
+                  ))}
+               </div>
+            </section>
          </div>
-
-         {/* Todo Modal */}
-         <CreateTodoModal
-            isOpen={isTodoModalOpen}
-            onClose={() => setIsTodoModalOpen(false)}
-            onTaskCreated={fetchTodos}
-         />
       </div>
    );
 };
@@ -723,7 +718,7 @@ const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () =
 
 
 // 3. ATS / PIPELINE (The Candidate Portal) - WITH REAL DATA & DRAG-AND-DROP
-const ATSView = ({ openCandidateId }: { openCandidateId?: number | null }) => {
+const ATSView = ({ openCandidateId, setActiveView, setOpenCandidateId }: { openCandidateId?: number | null, setActiveView: (view: any) => void, setOpenCandidateId: (id: number | null) => void }) => {
    const { user } = useAuth();
    const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
    const [applications, setApplications] = useState<any>({ applied: [], phone_screen: [], interview: [], offer: [], hired: [] });
@@ -1000,8 +995,15 @@ const ATSView = ({ openCandidateId }: { openCandidateId?: number | null }) => {
                      <div className="flex gap-2 justify-end">
                         <Button variant="outline" size="sm" onClick={() => setAutomationPrompt({ show: false, action: null, applicationId: null })}>Later</Button>
                         <Button variant="primary" size="sm" onClick={() => {
+                           const { action, applicationId } = automationPrompt;
                            setAutomationPrompt({ show: false, action: null, applicationId: null });
-                           // TODO: Open appropriate view based on action
+
+                           if (action === 'OPEN_INBOX' && applicationId) {
+                              setActiveView('inbox');
+                              setOpenCandidateId(applicationId);
+                           } else if (action === 'OPEN_SCHEDULER_MODAL') {
+                              setActiveView('calendar');
+                           }
                         }}>
                            {automationPrompt.action === 'JOB_CLOSED' ? 'Got it' : 'Yes'}
                         </Button>
@@ -1565,7 +1567,7 @@ const CareerSiteView = ({ initialData, pendingJobData, onPublish }: { initialDat
 };
 
 // 4. INBOX VIEW - WITH REAL ACTIVITIES DATA
-const InboxView = () => {
+const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => {
    const [applications, setApplications] = useState<any[]>([]);
    const [selectedApplication, setSelectedApplication] = useState<any | null>(null);
    const [activities, setActivities] = useState<any[]>([]);
@@ -1591,8 +1593,15 @@ const InboxView = () => {
          const allApps = Object.values(data).flat();
          setApplications(allApps);
 
-         // Select first application by default
-         if (allApps.length > 0) {
+         // Select application logic
+         if (openCandidateId) {
+            const target = allApps.find((a: any) => a.id === openCandidateId);
+            if (target) {
+               await selectApplication(target);
+            } else if (allApps.length > 0) {
+               await selectApplication(allApps[0]);
+            }
+         } else if (allApps.length > 0) {
             await selectApplication(allApps[0]);
          }
 
@@ -1858,10 +1867,23 @@ interface DashboardPageProps {
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggleTheme, isDarkMode }) => {
    const { user, logout } = useAuth();
-   const [activeView, setActiveView] = useState<'overview' | 'jobs' | 'candidates' | 'career_site' | 'inbox' | 'calendar' | 'reports' | 'settings'>('overview');
+   const [activeView, setActiveView] = useState<'overview' | 'jobs' | 'candidates' | 'career_site' | 'inbox' | 'calendar' | 'reports' | 'settings' | 'todos'>('overview');
    const [isJobModalOpen, setIsJobModalOpen] = useState(false);
    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
    const [pendingJobData, setPendingJobData] = useState<any>(null);
+
+   // TODOS STATE (Lifted)
+   const [todos, setTodos] = useState<any[]>([]);
+   const fetchTodos = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/todos?status=pending');
+         const data = await response.json();
+         setTodos(data.todos || []);
+      } catch (error) {
+         console.error('Failed to fetch todos:', error);
+      }
+   };
+   useEffect(() => { fetchTodos(); }, []);
 
    // --- GLOBAL SEARCH STATE ---
    const [globalQuery, setGlobalQuery] = useState('');
@@ -2044,9 +2066,15 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
             <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
                <div className="px-4 py-2 text-[10px] font-bold text-edluar-dark/40 dark:text-white/40 uppercase tracking-widest">Workspace</div>
                <NavItem id="overview" icon={LayoutGrid} label="Dashboard" />
-               <NavItem id="jobs" icon={Briefcase} label="Jobs & Pipeline" count={3} />
-               <NavItem id="candidates" icon={Users} label="Candidates" count={128} />
-               <NavItem id="inbox" icon={MessageSquare} label="Inbox" count={5} />
+               <NavItem
+                  id="todos"
+                  icon={CheckSquare}
+                  label="To-Dos"
+                  count={todos.length}
+               />
+               <NavItem id="jobs" icon={Briefcase} label="Jobs & Pipeline" />
+               <NavItem id="candidates" icon={Users} label="Candidates" />
+               <NavItem id="inbox" icon={MessageSquare} label="Inbox" />
 
                <NavItem id="calendar" icon={Calendar} label="Schedule" />
                <NavItem id="reports" icon={FileText} label="Reports" />
@@ -2171,12 +2199,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
             <div className="flex-1 overflow-auto">
                {activeView === 'overview' && <OverviewView user={user} onOpenCreate={() => setIsJobModalOpen(true)} />}
                {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} onNavigate={onNavigate} />}
-               {activeView === 'candidates' && <ATSView openCandidateId={openCandidateId} />}
+               {activeView === 'candidates' && <ATSView openCandidateId={openCandidateId} setActiveView={setActiveView} setOpenCandidateId={setOpenCandidateId} />}
                {activeView === 'career_site' && <CareerSiteView pendingJobData={pendingJobData} onPublish={handleJobPublished} />}
                {activeView === 'calendar' && <ScheduleView />}
                {activeView === 'reports' && <ReportsPage />}
-               {activeView === 'inbox' && <InboxView />}
-               {activeView !== 'overview' && activeView !== 'jobs' && activeView !== 'candidates' && activeView !== 'career_site' && activeView !== 'calendar' && activeView !== 'reports' && activeView !== 'inbox' && activeView !== 'settings' && (
+               {activeView === 'inbox' && <InboxView openCandidateId={openCandidateId} />}
+               {activeView === 'todos' && <TodosView todos={todos} onRefresh={fetchTodos} />}
+               {activeView !== 'overview' && activeView !== 'jobs' && activeView !== 'candidates' && activeView !== 'career_site' && activeView !== 'calendar' && activeView !== 'reports' && activeView !== 'inbox' && activeView !== 'settings' && activeView !== 'todos' && (
                   <div className="flex flex-col items-center justify-center h-full text-edluar-dark/40">
                      <Briefcase className="w-16 h-16 mb-4 opacity-20" />
                      <p>The {activeView} module is coming in Edluar v2.3</p>

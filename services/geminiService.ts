@@ -1,21 +1,49 @@
-const apiKey = process.env.GEMINI_API_KEY || '';
+// services/geminiService.ts
+
+// FIX 1: Use import.meta.env for Vite, not process.env
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 // Generic helper for calling Gemini
+// Generic helper for calling Gemini
 async function askGemini(prompt: string): Promise<string> {
-  if (!apiKey) return "⚠️ API Key missing. Check .env.local";
+  if (!apiKey) {
+    console.error("API Key is missing. Make sure VITE_GEMINI_API_KEY is in your .env file");
+    return "⚠️ Configuration Error: API Key missing.";
+  }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    // CORRECT ID: Using 'gemini-2.0-flash-exp' as requested for Preview tier
+    const model = 'gemini-2.0-flash-exp';
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      // If this still fails, it prints the exact reason from Google
+      console.error("Gemini API Error:", errorData);
+      throw new Error(`API Error ${response.status}: ${errorData.error?.message || response.statusText}`);
+    }
 
     const data = await response.json();
     return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response from AI.";
-  } catch (e) {
-    console.error("Gemini Error:", e);
-    return "Error connecting to AI service.";
+
+  } catch (error: any) {
+    console.error("Gemini Service Error:", error);
+    return `Error: ${error.message}`;
   }
 }
 
@@ -58,7 +86,6 @@ export const generateInterviewQuestions = async (jobDescription: string, candida
   Candidate: ${candidateResume.substring(0, 1000)}...`;
 
   const result = await askGemini(prompt);
-  // Clean markdown if Gemini adds it
   const cleanJson = result.replace(/```json|```/g, '').trim();
   try {
     return JSON.parse(cleanJson);
@@ -73,9 +100,9 @@ export const analyzeCandidateProfile = async (resumeText: string, jobTitle: stri
   Return a JSON object with:
   {
     "summary": "2 sentence executive summary",
-    "strengths": ["Strength 1", "Strength 2", "Strength 3"],
-    "matchScore": 85 (integer 0-100 based on fit),
-    "weaknesses": ["Gap 1", "Gap 2"]
+    "key_skills": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5"],
+    "match_score": 85 (integer 0-100 based on fit),
+    "red_flags": ["potential issue 1"]
   }
   
   Resume: ${resumeText.substring(0, 2000)}`;
@@ -85,13 +112,7 @@ export const analyzeCandidateProfile = async (resumeText: string, jobTitle: stri
   try {
     return JSON.parse(cleanJson);
   } catch (e) {
-    console.error("Failed to parse AI analysis", e);
-    return {
-      summary: "Analysis failed to parse.",
-      strengths: [],
-      matchScore: 0,
-      weaknesses: []
-    };
+    return null;
   }
 };
 
