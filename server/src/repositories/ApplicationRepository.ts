@@ -4,7 +4,7 @@ interface Application {
     id: number;
     job_id: number;
     candidate_id: number;
-    status: 'applied' | 'phone_screen' | 'interview' | 'offer' | 'hired';
+    status: 'applied' | 'phone_screen' | 'interview' | 'offer' | 'hired' | 'rejected';
     source: string;
     applied_at: string;
     updated_at: string;
@@ -86,6 +86,10 @@ export class ApplicationRepository {
         return updated;
     }
 
+    static async updateAIAnalysis(id: number, analysisJson: string): Promise<void> {
+        await this.getDB().run('UPDATE applications SET ai_analysis = ? WHERE id = ?', [analysisJson, id]);
+    }
+
     /**
      * Check if candidate already applied to this job
      */
@@ -139,6 +143,17 @@ export class ApplicationRepository {
              WHERE a.candidate_id = ?
              ORDER BY a.applied_at DESC`,
             [candidateId]
+        );
+    }
+    /**
+     * Reject an application with a reason
+     */
+    static async reject(id: number, reason: string): Promise<void> {
+        await this.getDB().run(
+            `UPDATE applications 
+             SET status = 'rejected', disqualification_reason = ?, updated_at = CURRENT_TIMESTAMP 
+             WHERE id = ?`,
+            [reason, id]
         );
     }
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserPlus, Shield, Palette, CreditCard, Circle } from 'lucide-react';
 import { Button } from '../Button';
 import { useAuth } from '../../context/AuthContext';
+import { RichTextEditor } from '../RichTextEditor';
 
 interface TeamMember {
     id: number;
@@ -19,6 +20,9 @@ export const WorkspaceSettings: React.FC = () => {
     ]);
     const [inviteEmail, setInviteEmail] = useState('');
     const [brandColor, setBrandColor] = useState('#4A7C59');
+    const [formData, setFormData] = useState({
+        signature: user?.signature || ''
+    });
 
     // Admin-only check
     if (user?.role !== 'admin') {
@@ -152,6 +156,22 @@ export const WorkspaceSettings: React.FC = () => {
                 </div>
             </div>
 
+            {/* Email Signature */}
+            <div className="bg-white dark:bg-edluar-surface rounded-2xl p-6 border border-edluar-pale dark:border-white/10">
+                <h2 className="text-xl font-bold text-edluar-dark dark:text-edluar-cream mb-4">
+                    Email Signature
+                </h2>
+                <p className="text-sm text-edluar-dark/60 dark:text-edluar-cream/60 mb-4">
+                    This signature will be automatically appended to all candidate emails
+                </p>
+
+                <RichTextEditor
+                    value={formData.signature}
+                    onChange={(html) => setFormData(prev => ({ ...prev, signature: html }))}
+                    placeholder="Best regards,&#10;Your Name"
+                />
+            </div>
+
             {/* Billing */}
             <div className="bg-white dark:bg-edluar-surface rounded-2xl p-6 border border-edluar-pale dark:border-white/10">
                 <h2 className="text-xl font-bold text-edluar-dark dark:text-edluar-cream mb-4">
@@ -188,8 +208,8 @@ export const WorkspaceSettings: React.FC = () => {
                             <div className="flex items-center gap-3">
                                 <Circle
                                     className={`w-3 h-3 ${integration.connected
-                                            ? 'text-green-500 fill-green-500'
-                                            : 'text-red-500 fill-red-500'
+                                        ? 'text-green-500 fill-green-500'
+                                        : 'text-red-500 fill-red-500'
                                         }`}
                                 />
                                 <span className="font-medium text-edluar-dark dark:text-edluar-cream">

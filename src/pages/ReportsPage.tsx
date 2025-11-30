@@ -23,7 +23,11 @@ export const ReportsPage: React.FC = () => {
 
             const res = await fetch(`http://localhost:5000/api/reports/overview?startDate=${startDate.toISOString()}&endDate=${endDate}`);
             const data = await res.json();
-            setMetrics(data);
+
+            const dashboardRes = await fetch('http://localhost:5000/api/reports/dashboard');
+            const dashboardData = await dashboardRes.json();
+
+            setMetrics({ ...data, ...dashboardData });
         } catch (err) {
             console.error("Failed to fetch reports:", err);
         } finally {
@@ -96,6 +100,31 @@ export const ReportsPage: React.FC = () => {
                         <span className="text-sm text-gray-500">candidates</span>
                     </div>
                     <p className="mt-2 text-xs text-gray-400">Excluding rejected & withdrawn</p>
+                </div>
+
+                {/* NEW METRICS */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Time to First Reply</h3>
+                        <Clock className="w-5 h-5 text-indigo-500" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-gray-900 dark:text-white">{metrics.timeToResponse || 0}</span>
+                        <span className="text-sm text-gray-500">hours</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">Avg time to engage candidate</p>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Interviews (30d)</h3>
+                        <Users className="w-5 h-5 text-pink-500" />
+                    </div>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-gray-900 dark:text-white">{metrics.interviews || 0}</span>
+                        <span className="text-sm text-gray-500">scheduled</span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-400">Volume of interviews</p>
                 </div>
             </div>
 
@@ -172,7 +201,34 @@ export const ReportsPage: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+
+                {/* DISQUALIFICATION REASONS */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[400px] lg:col-span-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Disqualification Reasons</h3>
+                    <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={metrics.disqualification || []}
+                                    innerRadius={60}
+                                    outerRadius={100}
+                                    paddingAngle={5}
+                                    dataKey="count"
+                                    nameKey="reason"
+                                >
+                                    {(metrics.disqualification || []).map((entry: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip />
+                                <Legend />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
         </div>
+
     );
 };

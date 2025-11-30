@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, Layout, CheckCircle2, ChevronDown, Settings, Calendar } from 'lucide-react';
+import { ArrowLeft, Save, Layout, CheckCircle2, ChevronDown, Settings, Calendar, Clock } from 'lucide-react';
 import { ContentBuilder, ContentBlock } from './ContentBuilder';
 import { Button } from './Button';
 
@@ -14,6 +14,7 @@ export const JobEditorPage: React.FC<JobEditorPageProps> = ({ onNavigate, jobId 
     const [location, setLocation] = useState('');
     const [type, setType] = useState('Full-time');
     const [closeDate, setCloseDate] = useState(''); // YYYY-MM-DD
+    const [replyTimeLimit, setReplyTimeLimit] = useState(3);
     const [blocks, setBlocks] = useState<ContentBlock[]>([
         { id: '1', type: 'header', value: 'About the Role' },
         { id: '2', type: 'paragraph', value: 'We are looking for a talented individual to join our team...' }
@@ -57,6 +58,7 @@ export const JobEditorPage: React.FC<JobEditorPageProps> = ({ onNavigate, jobId 
                 setLocation(job.location || '');
                 setType(job.employment_type || 'Full-time');
                 setCloseDate(job.close_date ? job.close_date.split('T')[0] : '');
+                setReplyTimeLimit(job.reply_time_limit || 3);
                 if (job.content_blocks) {
                     try {
                         setBlocks(JSON.parse(job.content_blocks));
@@ -89,7 +91,8 @@ export const JobEditorPage: React.FC<JobEditorPageProps> = ({ onNavigate, jobId 
                     location,
                     type,
                     content_blocks: blocks,
-                    close_date: closeDate || null
+                    close_date: closeDate || null,
+                    reply_time_limit: replyTimeLimit
                 }),
             });
 
@@ -308,6 +311,26 @@ export const JobEditorPage: React.FC<JobEditorPageProps> = ({ onNavigate, jobId 
                                     onChange={(e) => setCloseDate(e.target.value)}
                                     className="w-full px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-edluar-moss/50 outline-none transition-all dark:text-white"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                                    <Clock className="w-4 h-4 text-orange-500" /> Reply Time Limit
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Mark candidates as "Overdue" if they haven't received a reply or status change in this many days.
+                                </p>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="30"
+                                        value={replyTimeLimit}
+                                        onChange={(e) => setReplyTimeLimit(parseInt(e.target.value))}
+                                        className="w-20 px-3 py-2 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg outline-none focus:border-orange-500 transition-all dark:text-white"
+                                    />
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">days</span>
+                                </div>
                             </div>
 
                             <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">

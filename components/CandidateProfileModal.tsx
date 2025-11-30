@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, Mail, Phone, Calendar, MapPin, Tag, Star, FileText, AlertTriangle, ChevronRight } from 'lucide-react';
+import { X, User, Mail, Phone, Calendar, MapPin, Tag, Star, FileText, AlertTriangle, ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { StarRating } from './StarRating';
+import { analyzeCandidateProfile, draftResponse } from '../services/geminiService';
 import { Review, ReviewStats } from '../types/review';
 import { ScorecardModal } from './ScorecardModal';
 import { ScheduleInterviewModal } from './ScheduleInterviewModal';
+import { RichTextEditor } from './RichTextEditor';
 
 interface CandidateProfileModalProps {
     application: any;
@@ -32,6 +34,9 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
     const [history, setHistory] = useState<any[]>([]);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     const [scorecardCriteria, setScorecardCriteria] = useState<string[]>([]);
+    const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [isDrafting, setIsDrafting] = useState(false);
 
     useEffect(() => {
         fetchReviews();
@@ -41,7 +46,43 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
         fetchScorecards();
         fetchHistory();
         fetchJobDetails();
+        fetchJobDetails();
+        if (application.ai_analysis) {
+            try {
+                setAiAnalysis(JSON.parse(application.ai_analysis));
+            } catch (e) {
+                console.error("Failed to parse AI analysis", e);
+            }
+        } else {
+            setAiAnalysis(null);
+        }
     }, [application.id]);
+
+    const handleAnalyzeProfile = async () => {
+        setIsAnalyzing(true);
+        try {
+            // In real app, fetch resume text. For now, use mock text or fields
+            const resumeText = `Candidate: ${application.first_name} ${application.last_name}. 
+            Applied for: ${application.job_id}. 
+            Skills: ${application.tags}. 
+            Source: ${application.source}.`;
+
+            const analysis = await analyzeCandidateProfile(resumeText, "Job Description Placeholder");
+            setAiAnalysis(analysis);
+
+            // Save to DB
+            await fetch(`http://localhost:5000/api/applications/${application.id}/analysis`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ analysis })
+            });
+
+        } catch (error) {
+            console.error("Analysis failed", error);
+        } finally {
+            setIsAnalyzing(false);
+        }
+    };
 
     const fetchJobDetails = async () => {
         if (!application?.job_id) return;
@@ -284,6 +325,24 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
         }
     };
 
+    const handleDraftWithAI = async () => {
+        setIsDrafting(true);
+        try {
+            // Context: Last message from candidate or just application details
+            const lastMessage = activities.find(a => a.type === 'email' && a.sender === 'candidate');
+            const context = lastMessage
+                ? `Reply to candidate's last message: "${lastMessage.content}"`
+                : `Draft an initial outreach email for ${application.first_name} regarding the ${application.job_id} role.`;
+
+            const draft = await draftResponse(context);
+            setNewMessage(draft);
+        } catch (error) {
+            console.error("Drafting failed", error);
+        } finally {
+            setIsDrafting(false);
+        }
+    };
+
     return (
         <div className="absolute inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
             <div className="w-full max-w-6xl h-[90vh] bg-white dark:bg-edluar-surface rounded-2xl shadow-2xl flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -386,6 +445,60 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                 <div className="flex-1 overflow-hidden">
                     {activeTab === 'resume' && (
                         <div className="h-full overflow-y-auto p-6 space-y-6 custom-scrollbar">
+                            {/* AI Insights Card */}
+                            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-white dark:bg-white/10 rounded-lg shadow-sm text-indigo-600 dark:text-indigo-400">
+                                            <Sparkles className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-gray-900 dark:text-white">AI Candidate Insights</h3>
+                                            <p className="text-xs text-gray-500">Powered by Gemini</p>
+                                        </div>
+                                    </div>
+                                    {!aiAnalysis && (
+                                        <button
+                                            onClick={handleAnalyzeProfile}
+                                            disabled={isAnalyzing}
+                                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isAnalyzing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                            Analyze Profile
+                                        </button>
+                                    )}
+                                </div>
+
+                                {aiAnalysis && (
+                                    <div className="space-y-4 animate-fade-in">
+                                        <div className="flex gap-2">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${aiAnalysis.matchScore >= 80 ? 'bg-green-100 text-green-700' :
+                                                aiAnalysis.matchScore >= 50 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                                                }`}>
+                                                Match Score: {aiAnalysis.matchScore}%
+                                            </span>
+                                        </div>
+                                        <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {aiAnalysis.summary}
+                                        </p>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg">
+                                                <h4 className="text-xs font-bold text-green-600 uppercase mb-2">Strengths</h4>
+                                                <ul className="list-disc list-inside text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                                    {aiAnalysis.strengths?.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                                </ul>
+                                            </div>
+                                            <div className="bg-white/50 dark:bg-black/20 p-3 rounded-lg">
+                                                <h4 className="text-xs font-bold text-red-500 uppercase mb-2">Gaps</h4>
+                                                <ul className="list-disc list-inside text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                                                    {aiAnalysis.weaknesses?.map((w: string, i: number) => <li key={i}>{w}</li>)}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Resume PDF Viewer */}
                             <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4">
                                 <h3 className="text-sm font-bold uppercase text-gray-400 mb-3">Resume</h3>
@@ -598,7 +711,10 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                                                 ? 'bg-edluar-moss text-white'
                                                 : 'bg-gray-100 dark:bg-white/10 text-gray-900 dark:text-white'
                                                 }`}>
-                                                <p className="text-sm">{activity.content}</p>
+                                                <div
+                                                    className="text-sm prose prose-sm dark:prose-invert max-w-none"
+                                                    dangerouslySetInnerHTML={{ __html: activity.content }}
+                                                />
                                                 <span className={`text-xs mt-1 block ${activity.sender === 'recruiter' ? 'text-white/70' : 'text-gray-400'
                                                     }`}>
                                                     {formatDate(activity.created_at)}
@@ -625,13 +741,24 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                                     </select>
 
                                     {/* Message Textarea */}
-                                    <textarea
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Type your message..."
-                                        className="w-full px-3 py-2 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg text-sm resize-none focus:ring-2 ring-edluar-moss/20 focus:border-edluar-moss"
-                                        rows={3}
-                                    />
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Message</label>
+                                            <button
+                                                onClick={handleDraftWithAI}
+                                                disabled={isDrafting}
+                                                className="text-xs flex items-center gap-1 text-edluar-moss hover:underline disabled:opacity-50"
+                                            >
+                                                {isDrafting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                                Draft with AI
+                                            </button>
+                                        </div>
+                                        <RichTextEditor
+                                            value={newMessage}
+                                            onChange={setNewMessage}
+                                            placeholder="Type your message here..."
+                                        />
+                                    </div>
 
                                     {/* Send Button */}
                                     <button
@@ -652,7 +779,7 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
                 isOpen={showScorecardModal}
                 onClose={() => setShowScorecardModal(false)}
                 onSubmit={handleScorecardSubmit}
-                onSubmit={handleScorecardSubmit}
+
                 candidateName={`${application.first_name} ${application.last_name}`}
                 criteria={scorecardCriteria}
             />

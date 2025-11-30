@@ -247,6 +247,9 @@ export class ApplicationController {
             res.status(500).json({ error: 'Failed to fetch applications' });
         }
     }
+
+
+
     /**
      * Get candidate application history
      */
@@ -259,5 +262,12 @@ export class ApplicationController {
             console.error('Error fetching candidate history:', error);
             res.status(500).json({ error: 'Failed to fetch history' });
         }
+    }
+
+    static async saveAIAnalysis(req: Request, res: Response) {
+        const { id } = req.params;
+        const { analysis } = req.body; // Expecting JSON string or object
+        await ApplicationRepository.updateAIAnalysis(Number(id), typeof analysis === 'string' ? analysis : JSON.stringify(analysis));
+        res.json({ success: true });
     }
 }

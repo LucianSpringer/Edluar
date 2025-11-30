@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Star, X, CheckCircle2 } from 'lucide-react';
+import { Star, X, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { generateInterviewQuestions } from '../services/geminiService';
 
 interface ScorecardModalProps {
     isOpen: boolean;
@@ -15,6 +16,19 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({
 }) => {
     const [ratings, setRatings] = useState<Record<string, number>>({});
     const [takeaways, setTakeaways] = useState('');
+    const [aiQuestions, setAiQuestions] = useState<string[]>([]);
+    const [isGeneratingQs, setIsGeneratingQs] = useState(false);
+
+    const handleGenerateQuestions = async () => {
+        setIsGeneratingQs(true);
+        // In a real app, fetch resume text and job desc from props/API
+        const questions = await generateInterviewQuestions(
+            "Senior Frontend Developer with React and Node experience", // Mock Job Desc
+            "Junior developer with 1 year of HTML/CSS experience" // Mock Candidate
+        );
+        setAiQuestions(questions);
+        setIsGeneratingQs(false);
+    };
 
     if (!isOpen) return null;
 
@@ -80,33 +94,61 @@ export const ScorecardModal: React.FC<ScorecardModalProps> = ({
                     ))}
 
                     {/* Section 3: Takeaways */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Key Takeaways</label>
-                        <textarea
-                            value={takeaways}
-                            onChange={(e) => setTakeaways(e.target.value)}
-                            className="w-full h-32 p-4 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-edluar-moss/50 outline-none resize-none text-sm"
-                            placeholder="What are the candidate's strengths and weaknesses? (Required)"
-                        />
-                    </div>
-                </div>
+                    <div className="space-y-3 border-t border-gray-100 dark:border-white/5 pt-4">
+                        <div className="flex justify-between items-center">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Suggested Questions</label>
+                            <button
+                                onClick={handleGenerateQuestions}
+                                className="text-xs flex items-center gap-1 text-edluar-moss hover:underline"
+                                disabled={isGeneratingQs}
+                            >
+                                {isGeneratingQs ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                Generate with AI
+                            </button>
+                        </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        disabled={criteria.some(c => !ratings[c]) || !takeaways.trim()}
-                        onClick={handleSubmit}
-                        className="px-4 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                    >
-                        <CheckCircle2 className="w-4 h-4" />
-                        Submit Scorecard
-                    </button>
+                        {aiQuestions.length > 0 && (
+                            <div className="bg-edluar-cream/50 dark:bg-white/5 p-3 rounded-lg space-y-2">
+                                {aiQuestions.map((q, i) => (
+                                    <div key={i} className="text-sm text-gray-700 dark:text-gray-300 flex gap-2 items-start group cursor-pointer" onClick={() => setTakeaways(prev => prev + "\n- " + q)}>
+                                        <span className="text-edluar-moss font-bold">{i + 1}.</span>
+                                        <span>{q}</span>
+                                        <span className="opacity-0 group-hover:opacity-100 text-[10px] text-gray-400 ml-auto">Click to add</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="space-y-3">
+                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Key Takeaways</label>
+                            <textarea
+                                value={takeaways}
+                                onChange={(e) => setTakeaways(e.target.value)}
+                                className="w-full h-32 p-4 bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl focus:ring-2 focus:ring-edluar-moss/50 outline-none resize-none text-sm"
+                                placeholder="What are the candidate's strengths and weaknesses? (Required)"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="p-6 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20 flex justify-end gap-3">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 border border-gray-300 dark:border-white/10 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            disabled={criteria.some(c => !ratings[c]) || !takeaways.trim()}
+                            onClick={handleSubmit}
+                            className="px-4 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Submit Scorecard
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

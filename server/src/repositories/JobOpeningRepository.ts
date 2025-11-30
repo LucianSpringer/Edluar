@@ -19,6 +19,7 @@ interface JobOpening {
     created_at: string;
     updated_at: string;
     close_date?: string;
+    reply_time_limit?: number;
 }
 
 interface CreateJobOpeningData {
@@ -34,6 +35,7 @@ interface CreateJobOpeningData {
     employmentType?: string;
     status?: string;
     close_date?: string;
+    reply_time_limit?: number;
 }
 
 /**
@@ -72,8 +74,8 @@ export class JobOpeningRepository {
      */
     static async create(data: CreateJobOpeningData): Promise<JobOpening> {
         const result = await this.getDB().run(
-            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, scorecard_config, department, location, employment_type, status, close_date)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO job_openings (user_id, title, description, content_blocks, application_form_config, theme_config, scorecard_config, department, location, employment_type, status, close_date, reply_time_limit)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 data.userId,
                 data.title,
@@ -86,7 +88,8 @@ export class JobOpeningRepository {
                 data.location || null,
                 data.employmentType || 'full-time',
                 data.status || 'active',
-                data.close_date || null
+                data.close_date || null,
+                data.reply_time_limit || 3
             ]
         );
 
@@ -148,6 +151,10 @@ export class JobOpeningRepository {
         if (data.close_date !== undefined) {
             updates.push('close_date = ?');
             values.push(data.close_date);
+        }
+        if (data.reply_time_limit !== undefined) {
+            updates.push('reply_time_limit = ?');
+            values.push(data.reply_time_limit);
         }
 
         if (updates.length === 0) {

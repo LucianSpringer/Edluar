@@ -1,15 +1,30 @@
 import React from 'react';
-import { Search, Filter, Clock, MoreHorizontal, Plus } from 'lucide-react';
+import { Search, Filter, Clock, MoreHorizontal, Plus, XCircle } from 'lucide-react';
 
 export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
     const [candidates, setCandidates] = React.useState<any[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [job, setJob] = React.useState<any>(null);
+    const [rejectModal, setRejectModal] = React.useState<{ isOpen: boolean; candidateId: number | null }>({ isOpen: false, candidateId: null });
 
     React.useEffect(() => {
         if (jobId) {
             fetchCandidates();
+            fetchJobDetails();
         }
     }, [jobId]);
+
+    const fetchJobDetails = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/jobs/${jobId}`);
+            if (res.ok) {
+                const data = await res.json();
+                setJob(data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch job details", err);
+        }
+    };
 
     const fetchCandidates = async () => {
         try {
@@ -60,6 +75,34 @@ export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
         'interview': 'Interview',
         'offer': 'Offer',
         'hired': 'Hired'
+    };
+
+    const getOverdueStatus = (candidate: any, limitDays: number = 3) => {
+        // 1. Safety Check: Only active stages
+        if (['hired', 'offer', 'rejected', 'disqualified'].includes(candidate.stage)) return false;
+
+        // 2. Calculate Days Difference
+        const lastUpdate = new Date(candidate.updated_at || candidate.applied_at);
+        const today = new Date();
+        const diffTime = Math.abs(today.getTime() - lastUpdate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        return diffDays > limitDays;
+        return diffDays > limitDays;
+    };
+
+    const handleReject = async (id: number, reason: string) => {
+        try {
+            await fetch(`http://localhost:5000/api/applications/${id}/reject`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            setRejectModal({ isOpen: false, candidateId: null });
+            fetchCandidates(); // Refresh list
+        } catch (error) {
+            console.error("Failed to reject candidate", error);
+        }
     };
 
     const [searchQuery, setSearchQuery] = React.useState('');
@@ -162,7 +205,24 @@ export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
                                                     <span>★</span> {candidate.rating}.0
                                                 </div>
                                             )}
+                                            {getOverdueStatus(candidate, job?.reply_time_limit) && (
+                                                <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-wider rounded-full border border-red-200">
+                                                    Overdue
+                                                </span>
+                                            )}
                                         </div>
+
+                                        {/* Disqualify Button (only visible on hover) */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setRejectModal({ isOpen: true, candidateId: candidate.id });
+                                            }}
+                                            className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-all"
+                                            title="Disqualify Candidate"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
 
                                         <div className="flex items-center justify-between text-xs text-gray-400 mt-4 pt-3 border-t border-gray-50 dark:border-gray-700">
                                             <div className="flex items-center gap-1">
@@ -182,6 +242,38 @@ export const JobCandidatesView = ({ jobId }: { jobId?: number }) => {
                     ))}
                 </div>
             </div>
-        </div>
+
+
+            {/* Disqualification Modal */ }
+    {
+        rejectModal.isOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl w-96 shadow-2xl animate-in zoom-in-95 duration-200 border border-gray-200 dark:border-gray-700">
+                    <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-500" /> Disqualify Candidate
+                    </h3>
+                    <p className="text-sm text-gray-500 mb-4">Please select a reason for disqualification:</p>
+                    <div className="space-y-2 mb-6">
+                        {['Skillset Mismatch', 'Culture Fit', 'Salary Expectations', 'Unresponsive', 'Other'].map(r => (
+                            <button
+                                key={r}
+                                onClick={() => rejectModal.candidateId && handleReject(rejectModal.candidateId, r)}
+                                className="w-full text-left px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-red-200 dark:hover:border-red-800 transition-colors text-sm font-medium text-gray-700 dark:text-gray-200"
+                            >
+                                {r}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={() => setRejectModal({ isOpen: false, candidateId: null })}
+                        className="w-full py-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm font-medium"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        )
+    }
+        </div >
     );
 };

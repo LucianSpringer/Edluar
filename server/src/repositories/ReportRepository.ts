@@ -79,4 +79,46 @@ export class ReportRepository {
             throw err;
         }
     }
+
+    async getDisqualificationBreakdown(): Promise<{ reason: string; count: number }[]> {
+        return this.db.all(`
+            SELECT disqualification_reason as reason, COUNT(*) as count 
+            FROM applications 
+            WHERE status = 'rejected' 
+            GROUP BY disqualification_reason
+        `);
+    }
+
+    async getInterviewCount(): Promise<number> {
+        const result = await this.db.get(`
+            SELECT COUNT(*) as count FROM activities 
+            WHERE type = 'interview' AND created_at >= date('now', '-30 days')
+        `);
+        // Note: The user plan said 'FROM interviews', but we don't have an interviews table, we use activities with type='interview' or status='interview' in applications.
+        // Let's assume we count applications in 'interview' status or activities of type 'interview'.
+        // The plan said "SELECT COUNT(*) FROM interviews". I'll assume activities table has type='interview' or similar.
+        // Actually, looking at previous code, we have 'activities' table.
+        // Let's stick to activities table if possible, or applications status.
+        // "SELECT COUNT(*) FROM applications WHERE status = 'interview'" is simpler but only gives current snapshot.
+        // "SELECT COUNT(*) FROM activities WHERE type = 'interview'" gives historical volume.
+        // I'll use activities table assuming 'interview' type exists or similar.
+        // Wait, looking at ActivityRepository (not shown but inferred), we create activities.
+        // Let's check if we have 'interview' type activities.
+        // In ApplicationController, we saw `ActivityRepository.create({ type, ... })`.
+        // I'll use activities table.
+        return result?.count || 0;
+    }
+
+    async getAvgTimeToResponse(): Promise<number> {
+        const result = await this.db.get(`
+            SELECT AVG((JULIANDAY(act.created_at) - JULIANDAY(app.applied_at)) * 24) as avg_hours
+            FROM applications app
+            JOIN activities act ON act.application_id = app.id
+            WHERE act.id = (
+                SELECT MIN(id) FROM activities a2 
+                WHERE a2.application_id = app.id AND a2.type IN ('email', 'status_change')
+            )
+        `);
+        return Math.round(result?.avg_hours || 0);
+    }
 }

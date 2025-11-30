@@ -83,6 +83,7 @@ import { ContentController } from './controllers/ContentController';
 import { JobController } from './controllers/JobController';
 import { CompanyPageController } from './controllers/CompanyPageController';
 import { ApplicationController } from './controllers/ApplicationController';
+import { ApplicationRepository } from './repositories/ApplicationRepository';
 
 app.get('/api/posts', ContentController.getAllPosts);
 app.get('/api/posts/:id', ContentController.getPostById);
@@ -139,10 +140,20 @@ app.get('/api/activities/scheduled', ApplicationController.getScheduledActivitie
 
 // Application stage update (after more specific routes)
 app.patch('/api/applications/:id/stage', ApplicationController.updateStage);
+app.patch('/api/applications/:id/reject', async (req, res) => {
+    try {
+        const { reason } = req.body;
+        await ApplicationRepository.reject(Number(req.params.id), reason);
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to reject' });
+    }
+});
 
 // Report Routes
 import { ReportController } from './controllers/ReportController';
 app.get('/api/reports/overview', ReportController.getOverview);
+app.get('/api/reports/dashboard', ReportController.getDashboardMetrics);
 
 // Global Search Endpoint (Lightweight)
 app.get('/api/search', async (req: Request, res: Response) => {

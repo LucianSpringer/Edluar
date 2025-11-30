@@ -51,8 +51,12 @@ import {
    Pencil,
    TrendingUp,
    Mail,
-   Trash2
+
+   Trash2,
+   Wand2
 } from 'lucide-react';
+import { generateEmailDraft } from '../services/geminiService';
+import { RichTextEditor } from './RichTextEditor';
 import { Button } from './Button';
 import { useAuth } from '../context/AuthContext';
 import { CandidateProfileModal } from './CandidateProfileModal';
@@ -1568,6 +1572,8 @@ const InboxView = () => {
    const [inputMode, setInputMode] = useState<'email' | 'note'>('email');
    const [newMessage, setNewMessage] = useState("");
    const [loading, setLoading] = useState(true);
+   const [isDrafting, setIsDrafting] = useState(false);
+   const { user } = useAuth();
 
    // Fetch all applications and their activities
    useEffect(() => {
@@ -1608,6 +1614,21 @@ const InboxView = () => {
       } catch (error) {
          console.error("Failed to fetch activities:", error);
       }
+   };
+
+   const handleMagicDraft = async (intent: 'invite' | 'reject') => {
+      if (!selectedApplication) return;
+      setIsDrafting(true);
+
+      const draft = await generateEmailDraft(
+         intent,
+         `${selectedApplication.first_name}`,
+         'this position',
+         user?.name || 'Hiring Team'
+      );
+
+      setNewMessage(draft);
+      setIsDrafting(false);
    };
 
    const handleSend = async () => {
@@ -1740,9 +1761,10 @@ const InboxView = () => {
                                           <span>Internal Note</span>
                                        </div>
                                     )}
-                                    <p className="text-sm whitespace-pre-wrap">
-                                       {activity.content}
-                                    </p>
+                                    <div
+                                       className="text-sm prose prose-sm dark:prose-invert max-w-none"
+                                       dangerouslySetInnerHTML={{ __html: activity.content }}
+                                    />
                                     <span className={`text-xs mt-2 block ${isRecruiter && !isNote ? 'text-white/70' : 'text-gray-400'}`}>
                                        {new Date(activity.created_at).toLocaleString()}
                                     </span>
@@ -1773,22 +1795,38 @@ const InboxView = () => {
                         </button>
                      </div>
 
-                     <div className="flex gap-2">
-                        <input
-                           type="text"
-                           value={newMessage}
-                           onChange={(e) => setNewMessage(e.target.value)}
-                           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                           placeholder={inputMode === 'email' ? "Type your email..." : "Add an internal note..."}
-                           className="flex-1 px-4 py-3 bg-gray-100 dark:bg-white/5 border-none rounded-lg focus:ring-2 focus:ring-edluar-moss/50 transition-all"
-                        />
+                     <div className="flex gap-2 mb-2">
                         <button
-                           onClick={handleSend}
-                           className="px-6 py-3 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg font-bold transition-all flex items-center gap-2"
+                           onClick={() => handleMagicDraft('invite')}
+                           disabled={isDrafting}
+                           className="text-xs bg-blue-50 text-blue-600 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-blue-100 transition-colors"
                         >
-                           <Send className="w-4 h-4" />
-                           Send
+                           <Wand2 className="w-3 h-3" /> Draft Invite
                         </button>
+                        <button
+                           onClick={() => handleMagicDraft('reject')}
+                           disabled={isDrafting}
+                           className="text-xs bg-red-50 text-red-600 px-3 py-1 rounded-full flex items-center gap-1 hover:bg-red-100 transition-colors"
+                        >
+                           <Wand2 className="w-3 h-3" /> Draft Rejection
+                        </button>
+                     </div>
+
+                     <div className="flex flex-col gap-2">
+                        <RichTextEditor
+                           value={newMessage}
+                           onChange={setNewMessage}
+                           placeholder={inputMode === 'email' ? "Type your email..." : "Add an internal note..."}
+                        />
+                        <div className="flex justify-end">
+                           <button
+                              onClick={handleSend}
+                              className="px-6 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg font-bold transition-all flex items-center gap-2"
+                           >
+                              <Send className="w-4 h-4" />
+                              Send
+                           </button>
+                        </div>
                      </div>
                   </div>
                </>

@@ -19,8 +19,10 @@ import { CSS } from '@dnd-kit/utilities';
 import {
     GripVertical, Trash2, ChevronDown, ChevronUp,
     Type, Image as ImageIcon, Layout, Grid, List, Plus,
-    AlignLeft, CheckSquare, Layers, Monitor, Briefcase
+    AlignLeft, CheckSquare, Layers, Monitor, Briefcase,
+    Sparkles, Loader2
 } from 'lucide-react';
+import { refineContent } from '../services/geminiService';
 
 export type BlockType = 'header' | 'paragraph' | 'image' | 'list' | 'hero' | 'features' | 'steps' | 'gallery' | 'job_list' | 'bento_grid' | 'hero_collage';
 
@@ -99,27 +101,51 @@ const MiniColorPicker = ({ label, value, onChange }: { label: string, value?: st
     </div>
 );
 
-const BuilderInput = ({ label, value, onChange, placeholder, type = "text" }: any) => (
-    <div className="space-y-1.5 mb-3">
-        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</label>
-        {type === 'textarea' ? (
-            <textarea
-                value={value || ''}
-                onChange={e => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full p-2.5 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all resize-none h-24 dark:text-white"
-            />
-        ) : (
-            <input
-                type={type}
-                value={value || ''}
-                onChange={e => onChange(e.target.value)}
-                placeholder={placeholder}
-                className="w-full p-2.5 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all dark:text-white"
-            />
-        )}
-    </div>
-);
+const BuilderInput = ({ label, value, onChange, placeholder, type = "text" }: any) => {
+    const [isRefining, setIsRefining] = useState(false);
+
+    const handleRefine = async () => {
+        if (!value) return;
+        setIsRefining(true);
+        const polished = await refineContent(value);
+        onChange(polished);
+        setIsRefining(false);
+    };
+
+    return (
+        <div className="space-y-1.5 mb-3 relative">
+            <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</label>
+                {value && (
+                    <button
+                        onClick={handleRefine}
+                        disabled={isRefining}
+                        className="text-[10px] text-edluar-moss hover:text-green-600 flex items-center gap-1 disabled:opacity-50"
+                    >
+                        {isRefining ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                        {isRefining ? 'Polishing...' : 'AI Refine'}
+                    </button>
+                )}
+            </div>
+            {type === 'textarea' ? (
+                <textarea
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full p-2.5 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all resize-none h-24 dark:text-white"
+                />
+            ) : (
+                <input
+                    type={type}
+                    value={value || ''}
+                    onChange={e => onChange(e.target.value)}
+                    placeholder={placeholder}
+                    className="w-full p-2.5 text-sm bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg focus:ring-2 focus:ring-green-500/20 focus:border-green-500 outline-none transition-all dark:text-white"
+                />
+            )}
+        </div>
+    );
+};
 
 const BlockEditorCard = ({ id, type, children, onDelete, isOpen, onToggle, onUpdate }: any) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });

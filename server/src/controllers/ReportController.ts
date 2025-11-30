@@ -19,4 +19,23 @@ export class ReportController {
             res.status(500).json({ error: 'Failed to fetch report overview' });
         }
     }
+
+    static async getDashboardMetrics(req: Request, res: Response) {
+        try {
+            const [disqualification, interviews, timeToResponse] = await Promise.all([
+                reportRepo.getDisqualificationBreakdown(),
+                reportRepo.getInterviewCount(),
+                reportRepo.getAvgTimeToResponse()
+            ]);
+
+            res.json({
+                disqualification,
+                interviews,
+                timeToResponse
+            });
+        } catch (error) {
+            console.error('Error fetching report metrics:', error);
+            res.status(500).json({ error: 'Failed to fetch metrics' });
+        }
+    }
 }
