@@ -147,7 +147,7 @@ const BuilderInput = ({ label, value, onChange, placeholder, type = "text" }: an
     );
 };
 
-const BlockEditorCard = ({ id, type, children, onDelete, isOpen, onToggle, onUpdate }: any) => {
+const BlockEditorCard = ({ id, type, children, onDelete, isOpen, onToggle, onUpdate, bgColor, textColor }: any) => {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
     const style = {
@@ -200,37 +200,11 @@ const BlockEditorCard = ({ id, type, children, onDelete, isOpen, onToggle, onUpd
                 <div className="p-4 bg-white dark:bg-edluar-surface animate-slide-down">
                     {/* Color Picker */}
                     <div className="mb-4 pb-4 border-b border-gray-100 dark:border-white/5 flex items-center justify-between gap-4">
-
-                        {/* Background Color */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">BG</span>
-                            <div className="flex gap-1">
-                                {['#ffffff', '#F3F4F6', '#ECFDF5', '#FEFCE8', '#EFF6FF', '#111827'].map(color => (
-                                    <button
-                                        key={color}
-                                        onClick={() => onUpdate({ bgColor: color })}
-                                        className="w-4 h-4 rounded-full border border-gray-200 dark:border-white/10 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        title={color}
-                                    />
-                                ))}
-                            </div>
+                        <div className="flex-1">
+                            <MiniColorPicker label="BG" value={bgColor} onChange={(c) => onUpdate({ bgColor: c })} />
                         </div>
-
-                        {/* Text Color */}
-                        <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Text</span>
-                            <div className="flex gap-1">
-                                {['#111827', '#4B5563', '#ffffff', '#10B981'].map(color => (
-                                    <button
-                                        key={color}
-                                        onClick={() => onUpdate({ textColor: color })}
-                                        className="w-4 h-4 rounded-full border border-gray-200 dark:border-white/10 hover:scale-110 transition-transform"
-                                        style={{ backgroundColor: color }}
-                                        title={color}
-                                    />
-                                ))}
-                            </div>
+                        <div className="flex-1">
+                            <MiniColorPicker label="Text" value={textColor} onChange={(c) => onUpdate({ textColor: c })} />
                         </div>
                     </div>
                     {children}
@@ -332,9 +306,12 @@ export const ContentBuilder: React.FC<ContentBuilderProps> = ({ blocks, onChange
                                 isOpen={openBlockId === block.id}
                                 onToggle={() => toggleBlock(block.id)}
                                 onUpdate={(data: any) => updateBlock(block.id, data)}
+                                bgColor={block.bgColor}
+                                textColor={block.textColor}
                             >
                                 {block.type === 'header' && (
                                     <>
+
                                         <BuilderInput label="Heading Text" value={block.value} onChange={(v: string) => updateBlock(block.id, { value: v })} />
                                         <MiniFontPicker value={block.font} onChange={(f) => updateBlock(block.id, { font: f })} />
                                         <div className="space-y-1.5 mb-3">

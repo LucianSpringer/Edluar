@@ -121,4 +121,11 @@ export class ReportRepository {
         `);
         return Math.round(result?.avg_hours || 0);
     }
+
+    async getCandidatesHired(): Promise<number> {
+        const result = await this.db.get(`
+            SELECT COUNT(*) as count FROM applications WHERE status = 'hired'
+        `);
+        return result?.count || 0;
+    }
 }

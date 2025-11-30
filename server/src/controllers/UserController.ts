@@ -77,4 +77,29 @@ export class UserController {
             res.status(500).json({ error: 'Failed to update profile' });
         }
     }
+
+    /**
+     * Get user stats (Candidates Hired, Avg Response Time)
+     * GET /api/users/me/stats
+     */
+    static async getStats(req: Request, res: Response) {
+        try {
+            // In a real app, filter by user ID. For now, global stats.
+            const { ReportRepository } = require('../repositories/ReportRepository');
+            const reportRepo = new ReportRepository();
+
+            const [candidatesHired, avgResponseTime] = await Promise.all([
+                reportRepo.getCandidatesHired(),
+                reportRepo.getAvgTimeToResponse()
+            ]);
+
+            res.json({
+                candidatesHired,
+                avgResponseTime: `${avgResponseTime}h`
+            });
+        } catch (error) {
+            console.error('Error fetching user stats:', error);
+            res.status(500).json({ error: 'Failed to fetch user stats' });
+        }
+    }
 }

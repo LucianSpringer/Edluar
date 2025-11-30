@@ -25,14 +25,18 @@ export class ActivityRepository {
      * Create new activity
      */
     static async create(data: CreateActivityData): Promise<Activity> {
+        // If scheduled_at is in the future, status is 'pending', else 'sent'
+        const status = data.scheduledAt ? 'pending' : 'sent';
+
         const result = await this.getDB().run(
-            `INSERT INTO activities (application_id, type, content, scheduled_at)
-             VALUES (?, ?, ?, ?)`,
+            `INSERT INTO activities (application_id, type, content, scheduled_at, status)
+             VALUES (?, ?, ?, ?, ?)`,
             [
                 data.applicationId,
                 data.type,
                 data.content || null,
-                data.scheduledAt || null
+                data.scheduledAt || null,
+                status
             ]
         );
 
@@ -113,5 +117,26 @@ export class ActivityRepository {
              LIMIT ?`,
             [limit]
         );
+    }
+
+    /**
+     * Process scheduled messages that are due
+     */
+    static async processScheduledMessages(): Promise<void> {
+        const db = DatabaseManager.getInstance();
+        // Find messages that are pending AND past their due date
+        const pending = await db.all(`
+            SELECT * FROM activities 
+            WHERE status = 'pending' 
+            AND scheduled_at <= datetime('now')
+        `);
+
+        for (const msg of pending) {
+            // In a real app, you would trigger the Email API here (SendGrid/Resend)
+            console.log(`📧 [Auto-Sender] Sending scheduled email ID ${msg.id} to candidate...`);
+
+            // Mark as sent so it shows up in the UI timeline
+            await db.run("UPDATE activities SET status = 'sent' WHERE id = ?", [msg.id]);
+        }
     }
 }

@@ -69,6 +69,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.get('/api/users', UserController.getAll);
+app.get('/api/users/me/stats', UserController.getStats);
 app.put('/api/users/me', upload.single('avatar'), UserController.updateProfile);
 
 // Todo Routes
@@ -274,3 +275,10 @@ process.on('SIGINT', async () => {
 
 // Start the server
 startServer();
+
+import { ActivityRepository } from './repositories/ActivityRepository';
+
+// Run every 60 seconds
+setInterval(async () => {
+    await ActivityRepository.processScheduledMessages();
+}, 60000);

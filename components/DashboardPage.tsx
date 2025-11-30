@@ -177,6 +177,10 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
             // Find selected template config
             const selectedTemplate = SITE_TEMPLATES.find(t => t.name === data.template) || SITE_TEMPLATES[0];
 
+            if (!selectedTemplate) {
+               throw new Error("No template selected or available.");
+            }
+
             const jobPayload = {
                title: data.title,
                type: data.type,
@@ -211,9 +215,11 @@ const CreateJobModal = ({ isOpen, onClose, onComplete }: { isOpen: boolean; onCl
                onComplete(newJob); // Pass full job object back
             } else {
                console.error("Failed to create job");
+               alert("Failed to create job. Please try again.");
             }
          } catch (error) {
             console.error("Error creating job:", error);
+            alert("Error creating job: " + (error as Error).message);
          } finally {
             setIsCreating(false);
          }
@@ -610,16 +616,17 @@ const OverviewView = ({ user, onOpenCreate, notifications, onNavigateToInbox, on
       const today = new Date().toISOString().split('T')[0];
       const newCount = filteredApps.filter(app => app.applied_at?.startsWith(today)).length;
 
-      // Mock History (Last 7 days)
-      const history = [
-         { name: 'Mon', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Tue', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Wed', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Thu', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Fri', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Sat', value: Math.floor(Math.random() * 10) + 5 },
-         { name: 'Sun', value: Math.floor(Math.random() * 10) + 5 },
-      ];
+      // Calculate History (Last 7 days)
+      const history = [];
+      for (let i = 6; i >= 0; i--) {
+         const d = new Date();
+         d.setDate(d.getDate() - i);
+         const dateString = d.toISOString().split('T')[0];
+         const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+
+         const count = filteredApps.filter(app => app.applied_at?.startsWith(dateString)).length;
+         history.push({ name: dayName, value: count });
+      }
 
       setStats({ total, new: newCount, history });
 
@@ -828,7 +835,7 @@ const OverviewView = ({ user, onOpenCreate, notifications, onNavigateToInbox, on
                                  onClick={() => handleCompleteTodo(todo.id)}
                                  className="w-5 h-5 rounded-full border-2 border-[#A7C9B0] group-hover:bg-[#A7C9B0] transition-colors"
                               />
-                              <span className="text-sm text-[#2D362F]">{todo.text}</span>
+                              <span className="text-sm text-[#2D362F]">{todo.task}</span>
                            </div>
                         ))
                      )}
@@ -1021,7 +1028,7 @@ const JobsListView = ({ onOpenCreate, onEdit, onNavigate }: { onOpenCreate: () =
    };
 
    if (editingJobId) {
-      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onSwitchJob={setEditingJobId} />;
+      return <JobEditor onBack={() => setEditingJobId(null)} jobId={editingJobId} onSwitchJob={setEditingJobId} onNavigate={onNavigate} />;
    }
 
    // Filter Logic
@@ -1962,6 +1969,8 @@ const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => 
    const [newMessage, setNewMessage] = useState("");
    const [loading, setLoading] = useState(true);
    const [isDrafting, setIsDrafting] = useState(false);
+   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+   const [scheduledDate, setScheduledDate] = useState("");
    const { user } = useAuth();
 
    // Fetch all applications and their activities
@@ -2037,7 +2046,8 @@ const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                type: inputMode,
-               content: newMessage
+               content: newMessage,
+               scheduledAt: scheduledDate || null
             })
          });
 
@@ -2045,6 +2055,8 @@ const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => 
             // Refresh activities
             await selectApplication(selectedApplication);
             setNewMessage("");
+            setScheduledDate("");
+            setIsScheduleOpen(false);
          }
       } catch (error) {
          console.error("Failed to send message:", error);
@@ -2214,14 +2226,54 @@ const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => 
                            onChange={setNewMessage}
                            placeholder={inputMode === 'email' ? "Type your email..." : "Add an internal note..."}
                         />
-                        <div className="flex justify-end">
-                           <button
-                              onClick={handleSend}
-                              className="px-6 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg font-bold transition-all flex items-center gap-2"
-                           >
-                              <Send className="w-4 h-4" />
-                              Send
-                           </button>
+                        <div className="flex justify-between items-center mt-2">
+                           {/* Schedule Indicator */}
+                           {scheduledDate && (
+                              <div className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded flex items-center gap-1">
+                                 <Clock className="w-3 h-3" />
+                                 Will send: {new Date(scheduledDate).toLocaleString()}
+                                 <button onClick={() => setScheduledDate("")} className="ml-2 hover:text-red-500">×</button>
+                              </div>
+                           )}
+
+                           <div className="flex gap-2 ml-auto relative">
+                              {/* Toggle Picker */}
+                              <button
+                                 onClick={() => setIsScheduleOpen(!isScheduleOpen)}
+                                 className={`p-2 rounded-lg transition-colors ${scheduledDate ? 'bg-yellow-100 text-yellow-700' : 'hover:bg-gray-100 text-gray-500'}`}
+                                 title="Schedule Send"
+                              >
+                                 <Clock className="w-5 h-5" />
+                              </button>
+
+                              {/* The Pop-up Picker */}
+                              {isScheduleOpen && (
+                                 <div className="absolute bottom-full right-0 mb-2 bg-white p-4 rounded-xl shadow-xl border border-gray-200 w-64 z-50 animate-scale-in">
+                                    <h4 className="text-sm font-bold mb-3">Schedule for later</h4>
+                                    <input
+                                       type="datetime-local"
+                                       className="w-full border p-2 rounded text-sm mb-3"
+                                       onChange={(e) => setScheduledDate(e.target.value)}
+                                    />
+                                    <div className="flex justify-end">
+                                       <button
+                                          className="px-3 py-1 bg-edluar-moss text-white rounded text-sm"
+                                          onClick={() => setIsScheduleOpen(false)}
+                                       >
+                                          Set Time
+                                       </button>
+                                    </div>
+                                 </div>
+                              )}
+
+                              <button
+                                 onClick={handleSend}
+                                 className="px-6 py-2 bg-edluar-moss hover:bg-edluar-moss/90 text-white rounded-lg font-bold transition-all flex items-center gap-2"
+                              >
+                                 <Send className="w-4 h-4" />
+                                 {scheduledDate ? 'Schedule' : 'Send'}
+                              </button>
+                           </div>
                         </div>
                      </div>
                   </div>
@@ -2365,12 +2417,12 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
          onClick={onClick || (() => setActiveView(id))}
          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group ${activeView === id
             ? 'bg-[#EBF3ED] text-edluar-moss'
-            : 'text-edluar-dark/60 dark:text-edluar-cream/60 hover:bg-edluar-pale/30 dark:hover:bg-white/5'
+            : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10'
             }`}
       >
          <Icon className={`w-5 h-5 ${activeView === id ? 'stroke-[2.5px]' : 'stroke-2'}`} />
          <span className="flex-1 text-left">{label}</span>
-         {count && <span className={`text-xs px-2 py-0.5 rounded-full ${activeView === id ? 'bg-edluar-moss text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-500'}`}>{count}</span>}
+         {count && <span className={`text-xs px-2 py-0.5 rounded-full ${activeView === id ? 'bg-edluar-moss text-white' : 'bg-gray-200 dark:bg-white/20 text-gray-700 dark:text-gray-200'}`}>{count}</span>}
          {activeView === id && (
             <div className="w-2 h-2 rounded-full bg-edluar-moss absolute right-4" />
          )}

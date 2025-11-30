@@ -207,7 +207,7 @@ export const JobBlockRenderer: React.FC<JobBlockRendererProps> = ({ blocks, jobs
                                             ${isDisplay ? 'text-5xl md:text-9xl font-black tracking-tighter leading-[0.9] uppercase py-8 md:py-12' : 'text-2xl md:text-3xl font-bold mt-6 md:mt-8 mb-3 md:mb-4'}
                                             text-edluar-dark dark:text-edluar-cream
                                         `}
-                                        style={{ fontFamily: block.font }}
+                                        style={{ fontFamily: block.font, color: block.textColor }}
                                     >
                                         {block.value}
                                     </h2>

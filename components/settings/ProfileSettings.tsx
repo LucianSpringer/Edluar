@@ -13,14 +13,50 @@ export const ProfileSettings: React.FC = () => {
     const [formData, setFormData] = useState({
         name: user?.name || '',
         email: user?.email || '',
-        phone: '',
-        jobTitle: '',
-        signature: '',
+        phone: (user as any)?.phone || '',
+        jobTitle: (user as any)?.job_title || '',
+        signature: (user as any)?.signature || '',
     });
-    const [stats] = useState({
-        candidatesHired: 12,
-        avgResponseTime: '4h',
+
+    // Update form data when user context updates (e.g. initial load or after save)
+    useEffect(() => {
+        if (user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name || '',
+                email: user.email || '',
+                phone: (user as any).phone || '',
+                jobTitle: (user as any).job_title || '',
+                signature: (user as any).signature || '',
+            }));
+        }
+    }, [user]);
+    const [stats, setStats] = useState({
+        candidatesHired: 0,
+        avgResponseTime: '-',
     });
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await fetch('http://localhost:5000/api/users/me/stats', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setStats({
+                        candidatesHired: data.candidatesHired,
+                        avgResponseTime: data.avgResponseTime
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch user stats:', error);
+            }
+        };
+        fetchStats();
+    }, []);
 
     const handleTriggerFilePicker = () => {
         fileInputRef.current?.click();

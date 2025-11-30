@@ -11,11 +11,13 @@ import { Button } from '../../components/Button';
 interface JobEditorProps {
     jobId: number;
     onBack: () => void;
+    onNavigate: (target: string, params?: any) => void;
     // Function to tell parent to switch jobs
-    onSwitchJob: (newId: number) => void;
+    onSwitchJob?: (newId: number) => void;
+    initialTab?: string;
 }
 
-export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob }) => {
+export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onNavigate, onSwitchJob, initialTab }) => {
     const [activeTab, setActiveTab] = useState<'post' | 'form' | 'candidates' | 'design' | 'scorecard'>('post');
     const [job, setJob] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -195,7 +197,12 @@ export const JobEditor: React.FC<JobEditorProps> = ({ jobId, onBack, onSwitchJob
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <button
+                        // Opens the public job page in a new tab for testing
+                        onClick={() => window.open(`/jobs/${jobId}`, '_blank')}
+                        className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        title="Simulate / Preview"
+                    >
                         <Eye className="w-5 h-5" />
                     </button>
                     <button

@@ -737,9 +737,14 @@ const App: React.FC = () => {
   // PERSISTENCE LOGIC: If user is logged in, force Dashboard (unless in public mode)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'public') {
+    const pathname = window.location.pathname;
+
+    // Check for /jobs/:id path
+    const jobMatch = pathname.match(/^\/jobs\/(\d+)$/);
+
+    if (params.get('mode') === 'public' || jobMatch) {
       setPage('public-job');
-      setNavParams({ jobId: params.get('jobId') });
+      setNavParams({ jobId: jobMatch ? jobMatch[1] : params.get('jobId') });
       return;
     }
 
