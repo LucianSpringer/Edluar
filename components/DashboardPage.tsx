@@ -1982,7 +1982,7 @@ const InboxView = ({ openCandidateId }: { openCandidateId?: number | null }) => 
 
          // Select application logic
          if (openCandidateId) {
-            const target = allApps.find((a: any) => a.id === openCandidateId);
+            const target = allApps.find((a: any) => a.candidate_id === openCandidateId);
             if (target) {
                await selectApplication(target);
             } else if (allApps.length > 0) {
