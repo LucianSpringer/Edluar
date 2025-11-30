@@ -86,7 +86,7 @@ export const CreateTodoModal: React.FC<CreateTodoModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="bg-white dark:bg-edluar-surface rounded-2xl shadow-2xl w-full max-w-md p-6">
                 <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-edluar-dark dark:text-edluar-cream">

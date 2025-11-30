@@ -225,6 +225,21 @@ export class ApplicationController {
             res.status(500).json({ error: 'Failed to fetch scheduled activities' });
         }
     }
+
+    /**
+     * Get recent activities (Global Inbox)
+     */
+    static async getRecentActivities(req: Request, res: Response) {
+        try {
+            const limit = req.query.limit ? Number(req.query.limit) : 5;
+            const activities = await ActivityRepository.findRecentCommunications(limit);
+            res.json(activities);
+        } catch (error) {
+            console.error('Error fetching recent activities:', error);
+            res.status(500).json({ error: 'Failed to fetch recent activities' });
+        }
+    }
+
     /**
      * Get all applications (for Global Dashboard)
      */

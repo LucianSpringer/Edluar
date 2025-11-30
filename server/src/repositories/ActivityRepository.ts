@@ -93,4 +93,25 @@ export class ActivityRepository {
             ['status_change', limit]
         );
     }
+
+    /**
+     * Get recent communications (emails/notes) across all applications
+     * Joins with candidates and job_openings to provide context
+     */
+    static async findRecentCommunications(limit: number = 5): Promise<any[]> {
+        return this.getDB().all(
+            `SELECT 
+                a.*, 
+                c.first_name || ' ' || c.last_name as candidate_name,
+                j.title as job_title
+             FROM activities a
+             JOIN applications app ON a.application_id = app.id
+             JOIN candidates c ON app.candidate_id = c.id
+             JOIN job_openings j ON app.job_id = j.id
+             WHERE a.type IN ('email', 'note')
+             ORDER BY a.created_at DESC
+             LIMIT ?`,
+            [limit]
+        );
+    }
 }

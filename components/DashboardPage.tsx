@@ -54,7 +54,10 @@ import {
 
    Trash2,
    Wand2,
-   AlertCircle
+   AlertCircle,
+   LayoutDashboard,
+   Archive,
+   ArrowUpRight
 } from 'lucide-react';
 import { generateEmailDraft } from '../services/geminiService';
 import { RichTextEditor } from './RichTextEditor';
@@ -70,6 +73,22 @@ import { JobEditor } from '../src/pages/JobEditor';
 import { SITE_TEMPLATES } from '../src/data/templates';
 import { CreateTodoModal } from './CreateTodoModal';
 import { ScheduleView } from './ScheduleView';
+import { GlassCard } from './GlassCard';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { motion } from 'framer-motion';
+
+// --- ASSETS & CONSTANTS ---
+const COLORS = {
+   sageLight: '#A7C9B0',
+   sageDark: '#7A9A85',
+   cream: '#F5F7F2',
+   creamDark: '#E6E8E3',
+   textMain: '#2D362F',
+   textMuted: '#6B7A6F',
+   white: '#FFFFFF',
+   glassBorder: 'rgba(255, 255, 255, 0.6)',
+   accent: '#D4E2D4'
+};
 
 
 
@@ -544,58 +563,426 @@ const TodosView = ({ todos, onRefresh }: { todos: any[], onRefresh: () => void }
    );
 };
 
-// 1. OVERVIEW (Personal Dashboard)
-const OverviewView = ({ user, onOpenCreate }: { user: any; onOpenCreate: () => void }) => {
-   const templates = [
-      { title: "No template", image: null, color: "bg-edluar-cream" },
-      { title: "Future Forward", image: "https://images.unsplash.com/photo-1497366216548-37526070297c", color: "bg-purple-100" },
-      { title: "Clean Corporate", image: "https://images.unsplash.com/photo-1497215728101-856f4ea42174", color: "bg-blue-100" },
-      { title: "Creative Studio", image: "https://images.unsplash.com/photo-1600607686527-6fb886090705", color: "bg-orange-100" },
-   ];
+// 1. OVERVIEW (Personal Dashboard - Reskinned)
+const OverviewView = ({ user, onOpenCreate, notifications, onNavigateToInbox, onNavigateToSchedule }: { user: any; onOpenCreate: () => void; notifications: any[]; onNavigateToInbox: (candidateId: number) => void; onNavigateToSchedule: () => void }) => {
+   const [todos, setTodos] = React.useState<any[]>([]);
+   const [isTodoModalOpen, setIsTodoModalOpen] = React.useState(false);
+   const [stats, setStats] = React.useState<any>({ total: 0, new: 0, history: [] });
+   const [pipeline, setPipeline] = React.useState<any[]>([]);
+   const [interviews, setInterviews] = React.useState<any[]>([]);
+   const [recentActivities, setRecentActivities] = React.useState<any[]>([]);
+   const [jobs, setJobs] = React.useState<any[]>([]);
+   const [selectedPipelineJobId, setSelectedPipelineJobId] = React.useState<string>('all');
+   const [allApplications, setAllApplications] = React.useState<any>({});
+
+   const [templates, setTemplates] = React.useState<any[]>([
+      { id: 'new', title: "No template", image: null, color: "bg-edluar-cream", type: "default" },
+      { title: "Future Forward", image: "https://images.unsplash.com/photo-1497366216548-37526070297c", color: "bg-purple-100", type: "custom" },
+      { title: "Clean Corporate", image: "https://images.unsplash.com/photo-1497215728101-856f4ea42174", color: "bg-blue-100", type: "custom" },
+   ]);
 
    const getInitials = (name: string) => name.split(' ').map(part => part[0]).join('').toUpperCase().slice(0, 2);
    const displayName = user?.name || 'Guest User';
    const initials = user?.name ? getInitials(user.name) : 'GU';
 
-   return (
-      <div className="p-8 max-w-7xl mx-auto animate-fade-in-up">
-         <header className="flex items-center justify-between mb-12">
-            <div className="flex items-center gap-4">
-               <div className="w-16 h-16 rounded-full bg-edluar-moss text-edluar-cream flex items-center justify-center text-2xl font-serif font-bold shadow-lg overflow-hidden">
-                  {(user as any)?.avatar ? (
-                     <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                     initials
-                  )}
-               </div>
-               <div>
-                  <h1 className="text-3xl font-serif font-bold text-edluar-dark dark:text-edluar-cream">Good afternoon, {displayName.split(' ')[0]}</h1>
-                  <p className="text-edluar-dark/60 dark:text-edluar-cream/60">Here is what's happening at Edluar today.</p>
-               </div>
-            </div>
-         </header>
+   // Fetch Data
+   React.useEffect(() => {
+      fetchTodos();
+      fetchApplications();
+      fetchUpcomingInterviews();
+      fetchTemplates();
+      fetchRecentActivities();
+      fetchJobs();
+   }, []);
 
-         <div className="lg:col-span-3 space-y-10">
-            <section>
-               <div className="flex items-center justify-between mb-6">
-                  <button onClick={onOpenCreate} className="text-xl font-bold text-edluar-dark dark:text-edluar-cream flex items-center gap-2 hover:opacity-80 transition-opacity">
-                     <Plus className="w-5 h-5 text-edluar-moss" /> Start a new job post
-                  </button>
-               </div>
-               <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {templates.map((t, i) => (
-                     <div key={i} onClick={onOpenCreate} className="cursor-pointer bg-white dark:bg-black/20 border border-edluar-pale/50 dark:border-white/5 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group">
-                        <div className={`h-32 ${t.color} bg-cover bg-center relative`} style={t.image ? { backgroundImage: `url(${t.image})` } : {}}>
-                           {t.image && (
-                              <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40 group-hover:from-black/30 group-hover:to-black/50 transition-all" />
-                           )}
-                        </div>
-                        <h3 className="p-4 text-sm font-bold text-edluar-dark dark:text-edluar-cream">{t.title}</h3>
+   // Calculate Stats & Pipeline when data or filter changes
+   React.useEffect(() => {
+      if (!allApplications || Object.keys(allApplications).length === 0) return;
+
+      let filteredApps = Object.values(allApplications).flat() as any[];
+
+      if (selectedPipelineJobId !== 'all') {
+         filteredApps = filteredApps.filter(app => app.job_id === parseInt(selectedPipelineJobId));
+      }
+
+      // Calculate Stats
+      const total = filteredApps.length;
+      const today = new Date().toISOString().split('T')[0];
+      const newCount = filteredApps.filter(app => app.applied_at?.startsWith(today)).length;
+
+      // Mock History (Last 7 days)
+      const history = [
+         { name: 'Mon', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Tue', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Wed', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Thu', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Fri', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Sat', value: Math.floor(Math.random() * 10) + 5 },
+         { name: 'Sun', value: Math.floor(Math.random() * 10) + 5 },
+      ];
+
+      setStats({ total, new: newCount, history });
+
+      // Calculate Pipeline
+      const stages = [
+         { key: 'applied', label: 'Applied', color: 'bg-blue-200' },
+         { key: 'phone_screen', label: 'Screening', color: 'bg-purple-200' },
+         { key: 'interview', label: 'Interview', color: 'bg-yellow-200' },
+         { key: 'offer', label: 'Offer', color: 'bg-green-200' }
+      ];
+
+      const pipelineData = stages.map(stage => {
+         const stageApps = allApplications[stage.key] || [];
+         const count = selectedPipelineJobId === 'all'
+            ? stageApps.length
+            : stageApps.filter((app: any) => app.job_id === parseInt(selectedPipelineJobId)).length;
+
+         return { stage: stage.label, count, color: stage.color };
+      });
+
+      setPipeline(pipelineData);
+
+   }, [allApplications, selectedPipelineJobId]);
+
+   const fetchRecentActivities = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/activities/recent');
+         const data = await response.json();
+         setRecentActivities(Array.isArray(data) ? data : []);
+      } catch (error) {
+         console.error("Failed to fetch recent activities:", error);
+      }
+   };
+
+   const fetchTemplates = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/jobs');
+         const data = await response.json();
+         // Use actual jobs as templates, plus the "No template" option
+         const jobTemplates = Array.isArray(data) ? data.map((job: any) => ({
+            id: job.id,
+            title: job.title,
+            image: null, // Placeholder or fetch if available
+            color: "bg-white",
+            type: "custom"
+         })) : [];
+
+         setTemplates([
+            { id: 'new', title: "No template", image: null, color: "bg-edluar-cream", type: "default" },
+            ...jobTemplates
+         ]);
+      } catch (error) {
+         console.error("Failed to fetch templates:", error);
+      }
+   };
+
+   const fetchTodos = async () => {
+      try {
+         // Fetch ALL todos to calculate progress
+         const response = await fetch('http://localhost:5000/api/todos');
+         const data = await response.json();
+         setTodos(data.todos || []);
+      } catch (error) {
+         console.error('Failed to fetch todos:', error);
+      }
+   };
+
+   const fetchJobs = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/jobs');
+         const data = await response.json();
+         setJobs(Array.isArray(data) ? data : []);
+      } catch (error) {
+         console.error("Failed to fetch jobs:", error);
+      }
+   };
+
+   const fetchApplications = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/applications');
+         const data = await response.json();
+         setAllApplications(data);
+      } catch (error) {
+         console.error("Failed to fetch applications:", error);
+      }
+   };
+
+   const fetchUpcomingInterviews = async () => {
+      try {
+         const response = await fetch('http://localhost:5000/api/interviews/upcoming');
+         const data = await response.json();
+         setInterviews(Array.isArray(data) ? data.slice(0, 3) : []); // Show top 3
+      } catch (error) {
+         console.error("Failed to fetch interviews:", error);
+      }
+   };
+
+   const handleCompleteTodo = async (id: number) => {
+      setTodos(prev => prev.filter(t => t.id !== id));
+      try {
+         await fetch(`http://localhost:5000/api/todos/${id}/complete`, { method: 'PATCH' });
+      } catch (error) {
+         fetchTodos();
+      }
+   };
+
+   const pendingTodos = todos.filter(t => t.status === 'pending');
+   const completedCount = todos.filter(t => t.status === 'completed').length;
+   const totalDaily = todos.length;
+   const progress = totalDaily > 0 ? (completedCount / totalDaily) * 100 : 0;
+   const circumference = 2 * Math.PI * 28;
+   const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+   return (
+      <div className="p-8 max-w-[1600px] mx-auto animate-fade-in-up">
+         {/* Greeting Section */}
+         <section className="mb-8 flex items-center gap-6">
+            <div className="w-20 h-20 rounded-2xl bg-white shadow-sm border border-white/60 flex items-center justify-center overflow-hidden flex-shrink-0">
+               {(user as any)?.avatar ? (
+                  <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                  <span className="text-2xl font-bold text-[#7A9A85]">{initials}</span>
+               )}
+            </div>
+            <div>
+               <h1 className="text-4xl font-serif text-[#2D362F] mb-1 tracking-tight">
+                  Good afternoon, {displayName.split(' ')[0]}
+               </h1>
+               <p className="text-[#6B7A6F] text-lg">Here is what's happening at Edluar today.</p>
+            </div>
+         </section>
+
+         {/* Job Creation Templates Section (Redesigned) */}
+         <section className="mb-8">
+            <GlassCard className="p-6">
+               <h3 className="text-lg font-semibold text-[#2D362F] mb-4">Create a new job</h3>
+               <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                  {templates.map((template, idx) => (
+                     <div
+                        key={idx}
+                        className="min-w-[200px] h-[120px] rounded-xl border border-edluar-pale/50 hover:border-edluar-moss/50 cursor-pointer transition-all hover:shadow-md bg-white flex flex-col items-center justify-center gap-3 group relative overflow-hidden"
+                        onClick={onOpenCreate}
+                     >
+                        {template.type === 'default' ? (
+                           <>
+                              <div className="w-10 h-10 rounded-full bg-[#F5F7F2] flex items-center justify-center text-[#6B7A6F] group-hover:bg-[#EBF3ED] group-hover:text-[#557C60] transition-colors">
+                                 <Plus size={24} />
+                              </div>
+                              <span className="font-medium text-[#6B7A6F] group-hover:text-[#2D362F]">{template.title}</span>
+                           </>
+                        ) : (
+                           <>
+                              <div className={`absolute inset-0 ${template.color} opacity-10 group-hover:opacity-20 transition-opacity`} />
+                              <div className="z-10 text-center px-4">
+                                 <h4 className="font-bold text-[#2D362F] text-sm line-clamp-2">{template.title}</h4>
+                                 <p className="text-[10px] text-[#6B7A6F] mt-1 uppercase tracking-wider">Template</p>
+                              </div>
+                           </>
+                        )}
                      </div>
                   ))}
                </div>
-            </section>
+            </GlassCard>
+         </section>
+
+         <div className="grid grid-cols-12 gap-6 mb-8">
+            {/* ROW 1: To-Dos & Active Pipeline */}
+
+            {/* To-Do Widget */}
+            <div className="col-span-12 lg:col-span-6">
+               <GlassCard className="p-6 h-[320px] flex flex-col">
+                  <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-lg font-semibold text-[#2D362F]">To-Dos</h3>
+                     <button onClick={() => setIsTodoModalOpen(true)} className="text-[#A7C9B0] hover:text-[#7A9A85]">
+                        <Plus size={20} />
+                     </button>
+                  </div>
+
+                  <div className="flex items-center gap-6 mb-8">
+                     <div className="relative w-16 h-16 flex items-center justify-center">
+                        <svg className="w-full h-full transform -rotate-90">
+                           <circle cx="32" cy="32" r="28" stroke="#E6E8E3" strokeWidth="6" fill="none" />
+                           <circle
+                              cx="32" cy="32" r="28"
+                              stroke="#A7C9B0" strokeWidth="6" fill="none"
+                              strokeDasharray={circumference}
+                              strokeDashoffset={strokeDashoffset}
+                              strokeLinecap="round"
+                           />
+                        </svg>
+                        <span className="absolute text-xs font-bold text-[#557C60]">{Math.round(progress)}%</span>
+                     </div>
+                     <div>
+                        <h4 className="font-medium text-[#2D362F]">Daily Progress</h4>
+                        <p className="text-xs text-[#6B7A6F]">{completedCount} of {totalDaily} items completed</p>
+                     </div>
+                  </div>
+
+                  <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar">
+                     {pendingTodos.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-4">No pending tasks</p>
+                     ) : (
+                        pendingTodos.slice(0, 3).map(todo => (
+                           <div key={todo.id} className="flex items-center gap-3 group">
+                              <button
+                                 onClick={() => handleCompleteTodo(todo.id)}
+                                 className="w-5 h-5 rounded-full border-2 border-[#A7C9B0] group-hover:bg-[#A7C9B0] transition-colors"
+                              />
+                              <span className="text-sm text-[#2D362F]">{todo.text}</span>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </GlassCard>
+            </div>
+
+            {/* Active Pipeline Widget */}
+            <div className="col-span-12 lg:col-span-6">
+               <GlassCard className="p-6 h-[320px] flex flex-col">
+                  <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-lg font-semibold text-[#2D362F]">Active Pipeline</h3>
+                     <select
+                        value={selectedPipelineJobId}
+                        onChange={(e) => setSelectedPipelineJobId(e.target.value)}
+                        className="bg-white/50 border border-edluar-pale/50 rounded-lg px-2 py-1 text-xs text-[#2D362F] focus:outline-none focus:ring-2 focus:ring-edluar-moss/50"
+                     >
+                        <option value="all">All Jobs</option>
+                        {jobs.map(job => (
+                           <option key={job.id} value={job.id}>{job.title}</option>
+                        ))}
+                     </select>
+                  </div>
+                  <div className="space-y-5 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                     {pipeline.map((stage) => (
+                        <div key={stage.stage}>
+                           <div className="flex justify-between text-sm mb-1.5">
+                              <span className="font-medium text-[#2D362F]">{stage.stage}</span>
+                              <span className="text-[#6B7A6F]">{stage.count}</span>
+                           </div>
+                           <div className="h-2 bg-[#F5F7F2] rounded-full overflow-hidden">
+                              <motion.div
+                                 initial={{ width: 0 }}
+                                 animate={{ width: `${(stage.count / (stats.total || 1)) * 100}%` }}
+                                 transition={{ duration: 1, ease: "easeOut" }}
+                                 className={`h-full ${stage.color} rounded-full`}
+                              />
+                           </div>
+                        </div>
+                     ))}
+                  </div>
+               </GlassCard>
+            </div>
+
+            {/* ROW 2: Schedule, Stats, Inbox */}
+
+            {/* Schedule Widget */}
+            <div className="col-span-12 lg:col-span-4">
+               <GlassCard className="p-6 h-[320px] flex flex-col">
+                  <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-lg font-semibold text-[#2D362F]">Upcoming Event</h3>
+                     <button className="text-[#A7C9B0] hover:text-[#7A9A85]" onClick={onNavigateToSchedule}>
+                        <Calendar size={20} />
+                     </button>
+                  </div>
+                  <div className="space-y-2 flex-1 overflow-y-auto custom-scrollbar">
+                     {interviews.length === 0 ? (
+                        <div className="text-center py-8 text-gray-400">
+                           <Calendar className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                           <p className="text-sm">No upcoming interviews</p>
+                        </div>
+                     ) : (
+                        interviews.map((event) => (
+                           <div key={event.id} className="flex gap-3 p-2 bg-white/40 rounded-xl border border-white/50">
+                              <div className="flex flex-col items-center justify-center w-10 bg-white rounded-lg shadow-sm py-1">
+                                 <span className="text-[10px] font-bold text-[#A7C9B0]">{new Date(event.interview_date).toLocaleString('default', { month: 'short' }).toUpperCase()}</span>
+                                 <span className="text-base font-bold text-[#2D362F]">{new Date(event.interview_date).getDate()}</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                 <h4 className="font-medium text-[#2D362F] text-sm truncate">{event.title}</h4>
+                                 <p className="text-xs text-[#6B7A6F] truncate">{new Date(event.interview_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} • {event.candidate_name}</p>
+                              </div>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </GlassCard>
+            </div>
+
+            {/* Candidates Stats Widget */}
+            <div className="col-span-12 lg:col-span-4">
+               <GlassCard className="p-6 h-[320px] flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                     <div>
+                        <p className="text-[#6B7A6F] text-sm font-medium mb-1">Total Candidates</p>
+                        <h3 className="text-4xl font-serif text-[#2D362F]">{stats.total}</h3>
+                     </div>
+                     <div className="bg-[#EBF3ED] px-3 py-1 rounded-full text-xs font-bold text-[#557C60]">
+                        +{stats.new} New
+                     </div>
+                  </div>
+                  <div className="h-40 w-full mt-4">
+                     <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={stats.history}>
+                           <Bar dataKey="value" fill="#A7C9B0" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                     </ResponsiveContainer>
+                  </div>
+               </GlassCard>
+            </div>
+
+            {/* Inbox Widget (Real Data) */}
+            <div className="col-span-12 lg:col-span-4">
+               <GlassCard className="p-6 h-[320px] flex flex-col">
+                  <div className="flex justify-between items-center mb-4">
+                     <h3 className="text-lg font-semibold text-[#2D362F]">Inbox</h3>
+                     <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-bold">
+                        Recent
+                     </span>
+                  </div>
+                  <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar">
+                     {recentActivities.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-8">No recent messages</p>
+                     ) : (
+                        recentActivities.map((activity) => (
+                           <div
+                              key={activity.id}
+                              className="flex items-center gap-3 p-2 hover:bg-white/40 rounded-lg transition-colors cursor-pointer"
+                              onClick={() => {
+                                 // Use application_id if available, otherwise we might need to look it up or just open the candidate
+                                 // Assuming activity has candidate_id or application_id
+                                 if (activity.candidate_id) {
+                                    onNavigateToInbox(activity.candidate_id);
+                                 } else if (activity.application_id) {
+                                    // Fallback if candidate_id is missing but application_id exists (though logic usually needs candidateId)
+                                    // For now, we rely on candidate_id being present in the view model
+                                    console.warn("No candidate_id found for activity", activity);
+                                 }
+                              }}
+                           >
+                              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs flex-shrink-0">
+                                 {activity.type === 'email' ? <MessageSquare size={14} /> : <FileText size={14} />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                 <p className="text-sm font-medium text-[#2D362F] truncate">{activity.candidate_name}</p>
+                                 <p className="text-xs text-[#6B7A6F] truncate">{activity.content}</p>
+                              </div>
+                              <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                                 {new Date(activity.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                           </div>
+                        ))
+                     )}
+                  </div>
+               </GlassCard>
+            </div>
          </div>
+
+         {/* Todo Modal */}
+         <CreateTodoModal
+            isOpen={isTodoModalOpen}
+            onClose={() => setIsTodoModalOpen(false)}
+            onTaskCreated={fetchTodos}
+         />
       </div>
    );
 };
@@ -1976,37 +2363,47 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
    const NavItem = ({ id, icon: Icon, label, count, onClick }: any) => (
       <button
          onClick={onClick || (() => setActiveView(id))}
-         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${activeView === id
-            ? 'bg-edluar-moss text-white shadow-lg shadow-edluar-moss/20'
+         className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 relative group ${activeView === id
+            ? 'bg-[#EBF3ED] text-edluar-moss'
             : 'text-edluar-dark/60 dark:text-edluar-cream/60 hover:bg-edluar-pale/30 dark:hover:bg-white/5'
             }`}
       >
-         <Icon className="w-5 h-5" />
+         <Icon className={`w-5 h-5 ${activeView === id ? 'stroke-[2.5px]' : 'stroke-2'}`} />
          <span className="flex-1 text-left">{label}</span>
-         {count && <span className={`text-xs px-2 py-0.5 rounded-full ${activeView === id ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-500'}`}>{count}</span>}
+         {count && <span className={`text-xs px-2 py-0.5 rounded-full ${activeView === id ? 'bg-edluar-moss text-white' : 'bg-gray-100 dark:bg-white/10 text-gray-500'}`}>{count}</span>}
+         {activeView === id && (
+            <div className="w-2 h-2 rounded-full bg-edluar-moss absolute right-4" />
+         )}
       </button>
    );
 
    return (
       <div className="flex h-screen bg-edluar-cream dark:bg-edluar-deep transition-colors duration-300 overflow-hidden">
          <aside className="w-64 bg-white dark:bg-black/20 border-r border-edluar-pale/50 dark:border-white/5 flex flex-col z-20">
-            <div className="p-6 relative">
+            <div className="p-8 flex flex-col items-center relative">
                <div
-                  className="flex items-center gap-3 cursor-pointer hover:bg-edluar-pale/20 dark:hover:bg-white/5 p-2 rounded-xl transition-colors"
+                  className="flex flex-col items-center gap-3 cursor-pointer group"
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                >
-                  <div className="w-10 h-10 bg-edluar-moss rounded-full flex items-center justify-center text-white font-bold font-serif shadow-md text-sm overflow-hidden">
-                     {(user as any)?.avatar ? (
-                        <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
-                     ) : (
-                        initials
-                     )}
+                  <div className="relative">
+                     <div className="w-20 h-20 rounded-full p-1 border border-edluar-pale dark:border-white/10">
+                        <div className="w-full h-full rounded-full bg-gray-200 overflow-hidden">
+                           {(user as any)?.avatar ? (
+                              <img src={`http://localhost:5000${(user as any).avatar}`} alt="Profile" className="w-full h-full object-cover" />
+                           ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-edluar-moss text-white text-2xl font-serif font-bold">
+                                 {initials}
+                              </div>
+                           )}
+                        </div>
+                     </div>
+                     <div className="absolute bottom-1 right-1 w-5 h-5 bg-edluar-moss rounded-full border-2 border-white dark:border-edluar-deep"></div>
                   </div>
-                  <div className="flex flex-col">
-                     <span className="font-bold text-sm text-edluar-dark dark:text-white leading-tight">{displayName}</span>
-                     <span className="text-[10px] text-edluar-dark/50 dark:text-white/50">Workspace Admin</span>
+
+                  <div className="text-center">
+                     <h3 className="font-bold text-lg text-edluar-dark dark:text-white">{displayName}</h3>
+                     <p className="text-[10px] font-bold text-edluar-dark/40 dark:text-white/40 uppercase tracking-widest mt-1">Workspace Admin</p>
                   </div>
-                  <ChevronDown className={`w-4 h-4 ml-auto text-edluar-dark/40 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                </div>
 
                {/* PROFILE DROPDOWN MENU */}
@@ -2065,25 +2462,34 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
             </div>
             <div className="flex-1 px-4 py-4 space-y-1 overflow-y-auto custom-scrollbar">
                <div className="px-4 py-2 text-[10px] font-bold text-edluar-dark/40 dark:text-white/40 uppercase tracking-widest">Workspace</div>
-               <NavItem id="overview" icon={LayoutGrid} label="Dashboard" />
+               <NavItem id="overview" icon={LayoutDashboard} label="Dashboard" />
                <NavItem
                   id="todos"
-                  icon={CheckSquare}
+                  icon={CheckCircle2}
                   label="To-Dos"
                   count={todos.length}
                />
                <NavItem id="jobs" icon={Briefcase} label="Jobs & Pipeline" />
                <NavItem id="candidates" icon={Users} label="Candidates" />
                <NavItem id="inbox" icon={MessageSquare} label="Inbox" />
-
                <NavItem id="calendar" icon={Calendar} label="Schedule" />
-               <NavItem id="reports" icon={FileText} label="Reports" />
+               <NavItem id="reports" icon={Archive} label="Archives" />
             </div>
             <div className="p-4 border-t border-edluar-pale/50 dark:border-white/5 space-y-2">
-               <button onClick={toggleTheme} className="w-full flex items-center gap-3 px-4 py-2 text-sm text-edluar-dark/60 dark:text-edluar-cream/60 hover:text-edluar-moss transition-colors">
-                  {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-               </button>
+               <div className="p-6 border-t border-edluar-pale/50 dark:border-white/5">
+                  <div className="flex items-center justify-between px-2">
+                     <div className="flex items-center gap-2 text-sm font-medium text-edluar-dark/60 dark:text-edluar-cream/60">
+                        <Moon size={18} />
+                        <span>Dark Mode</span>
+                     </div>
+                     <button
+                        onClick={toggleTheme}
+                        className={`w-12 h-6 rounded-full transition-colors duration-200 relative ${isDarkMode ? 'bg-edluar-moss' : 'bg-gray-300'}`}
+                     >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${isDarkMode ? 'left-7' : 'left-1'}`} />
+                     </button>
+                  </div>
+               </div>
             </div>
          </aside>
 
@@ -2197,7 +2603,18 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigate, toggle
             </div>
 
             <div className="flex-1 overflow-auto">
-               {activeView === 'overview' && <OverviewView user={user} onOpenCreate={() => setIsJobModalOpen(true)} />}
+               {activeView === 'overview' && (
+                  <OverviewView
+                     user={user}
+                     onOpenCreate={() => setIsJobModalOpen(true)}
+                     notifications={notifications}
+                     onNavigateToInbox={(candidateId) => {
+                        setActiveView('inbox');
+                        setOpenCandidateId(candidateId);
+                     }}
+                     onNavigateToSchedule={() => setActiveView('calendar')}
+                  />
+               )}
                {activeView === 'jobs' && <JobsListView onOpenCreate={() => setIsJobModalOpen(true)} onEdit={handleEditJob} onNavigate={onNavigate} />}
                {activeView === 'candidates' && <ATSView openCandidateId={openCandidateId} setActiveView={setActiveView} setOpenCandidateId={setOpenCandidateId} />}
                {activeView === 'career_site' && <CareerSiteView pendingJobData={pendingJobData} onPublish={handleJobPublished} />}

@@ -134,6 +134,7 @@ app.get('/api/interviews/upcoming', InterviewController.getUpcoming);
 app.delete('/api/interviews/:id', InterviewController.delete);
 
 // Activity Routes (must be before :id/stage to avoid conflicts)
+app.get('/api/activities/recent', ApplicationController.getRecentActivities);
 app.get('/api/applications/:id/activities', ApplicationController.getActivities);
 app.post('/api/applications/:id/activities', ApplicationController.createActivity);
 app.get('/api/activities/scheduled', ApplicationController.getScheduledActivities);
